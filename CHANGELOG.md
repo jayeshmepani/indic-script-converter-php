@@ -1,13 +1,23 @@
 # Changelog
 
-## 1.0.0 — PHP 8.3+ port
+## 1.1.0
 
-- Ported the current Dart/Python transliteration core to strict-typed PHP 8.3+.
-- Preserved `extendedIndic` as the default forward profile.
-- Ported Latin/IAST → Devanagari and Gujarati conversion, including Vedic marks, NFD/NFC input, extended Indic mappings, punctuation/digit/OM policies, unknown-mark policies, contextual vocalic/flap handling, and exact-source metadata.
-- Ported Latin/IAST → plain-English and explicit Hunterian rendering.
-- Ported Devanagari/Gujarati → canonical IAST, including reverse Vedic accent placement.
-- Ported lossless result envelopes and checksummed invisible Unicode-Tag exact-source metadata.
-- Added direct Devanagari ↔ Gujarati conversion with typed exact-source metadata.
-- Bundled Unicode 17.0.0 canonical normalization, combining-class, mark-category, and simple case data; no PHP `intl` or `mbstring` runtime dependency is required.
-- Added 497-case aligned corpora, 22 Vedic fixtures, seven CLI output generators, and an executable parity/regression suite.
+- Added canonical Devanagari/Gujarati script-to-script conversion options and policies.
+- Preserved Vedic mark reattachment on canonical script transliterations.
+- Standardized package manifests, author details, and release actions across all runtimes.
+
+## 1.0.0
+
+- Added the complete Node.js 20+/ES2023 port.
+- Preserved `extendedIndic` as the default profile.
+- Ported Devanagari and Gujarati forward conversion mappings and policies.
+- Ported plain-English and Hunterian transcription policies.
+- Ported canonical Devanagari/Gujarati reverse conversion.
+- Ported Vedic accent handling and accent reattachment.
+- Ported Unicode normalization controls.
+- Ported the lossless result envelope and JSON schema.
+- Ported the invisible exact-source Unicode Tag trailer byte-for-byte.
+- Added all 497 index-aligned corpus cases in five conversion directions.
+- Added all 22 Vedic fixtures.
+- Added five CLI-compatible output generators.
+- Added Node built-in test-runner coverage with no runtime dependencies.
