@@ -1,13 +1,10 @@
 # Changelog
 
-## 1.1.0
+## 1.0.0
 
 - Added canonical Devanagari/Gujarati script-to-script conversion options and policies.
 - Preserved Vedic mark reattachment on canonical script transliterations.
 - Standardized package manifests, author details, and release actions across all runtimes.
-
-## 1.0.0
-
 - Added the complete Node.js 20+/ES2023 port.
 - Preserved `extendedIndic` as the default profile.
 - Ported Devanagari and Gujarati forward conversion mappings and policies.
