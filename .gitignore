@@ -1,0 +1,56 @@
+# Composer dependencies
+/vendor/
+
+# Composer local/auth files
+auth.json
+
+# PHPUnit / test output
+.phpunit.cache/
+.phpunit.result.cache
+coverage/
+clover.xml
+
+# Pint / PHP CS Fixer caches
+.pint.cache
+.php-cs-fixer.cache
+
+# Rector cache
+/.rector.cache/
+rector-cache/
+
+# PHPStan cache, if ever enabled locally
+.phpstan.cache/
+
+# IDEs / Editors
+.idea/
+.vscode/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs / temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+
+# Local environment / secrets
+.env
+.env.*
+!.env.example
+
+# Generated verification outputs
+*_output.txt
+
+# Local scratch / grabbed content
+grabbed_stuffs/
+
+# Common framework/runtime dirs if package is tested inside a host project
+storage/
+bootstrap/cache/
+public/build/
+node_modules/

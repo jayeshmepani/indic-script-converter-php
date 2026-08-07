@@ -1,0 +1,65 @@
+{
+  "name": "jayeshmepani/indic-script-converter",
+  "description": "Lossless IAST/extended Indic transliteration for Devanagari, Gujarati, plain English, canonical reverse conversion, and direct Gujarati/Devanagari conversion.",
+  "keywords": [
+    "transliteration",
+    "indic",
+    "iast",
+    "devanagari",
+    "gujarati",
+    "lossless",
+    "sanskrit",
+    "vedic"
+  ],
+  "homepage": "https://github.com/jayeshmepani/indic-script-converter",
+  "support": {
+    "issues": "https://github.com/jayeshmepani/indic-script-converter/issues",
+    "source": "https://github.com/jayeshmepani/indic-script-converter"
+  },
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Jayesh Patel",
+      "email": "jayeshmepani777@gmail.com"
+    }
+  ],
+  "require": {
+    "php": ">=8.3"
+  },
+  "require-dev": {
+    "laravel/pint": "^1.29",
+    "rector/rector": "^2.4"
+  },
+  "autoload": {
+    "classmap": [
+      "src/"
+    ]
+  },
+  "scripts": {
+    "test": "php tests/run.php",
+    "verify": "php tools/latn_iast_transliteration_verification/run_all.php",
+    "demo": "php examples/demo.php",
+    "lint": "pint",
+    "lint:fix": "pint",
+    "lint:check": "pint --test",
+    "test:lint": "@lint:check",
+    "rector": "vendor/bin/rector process",
+    "rector:dry": "vendor/bin/rector process --dry-run",
+    "quality": [
+      "@lint:check",
+      "@test",
+      "@rector:dry"
+    ]
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true,
+  "config": {
+    "process-timeout": 900,
+    "sort-packages": true,
+    "optimize-autoloader": true,
+    "platform": {
+      "php": "8.3.0"
+    }
+  }
+}
