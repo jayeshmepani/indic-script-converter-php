@@ -27,17 +27,22 @@ The source project uses `extendedIndic` as the default forward profile, and this
 
 ## Installation
 
-No dependency install is required for a checkout:
+### Via Composer (recommended)
+
+```bash
+composer require jayeshmepani/lipimala
+```
+
+### Manual (no Composer)
 
 ```php
 require '/path/to/lipimala-php/autoload.php';
 ```
 
-Composer projects can also load the package from a local/path repository. The package requirement is:
+### Requirements
 
-```json
-"php": ">=8.3"
-```
+- PHP **8.3** or newer
+- No runtime dependencies — no `intl`, no `mbstring`
 
 ## Basic API
 
