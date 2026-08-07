@@ -34,9 +34,21 @@
     "rector/rector": "^2.4"
   },
   "autoload": {
-    "psr-4": {
-      "Lipimala\\": "src/"
-    }
+    "classmap": [
+      "src/"
+    ],
+    "files": [
+      "src/UnicodeData.php",
+      "src/Unicode.php",
+      "src/TransliterationCore.php",
+      "src/Forward.php",
+      "src/LatnIastToDeva.php",
+      "src/LatnIastToGujr.php",
+      "src/LatnIastTranscription.php",
+      "src/BrahmicToLatnIast.php",
+      "src/Transliteration.php",
+      "src/DevaGujrConverter.php"
+    ]
   },
   "scripts": {
     "test": "php tests/run.php",
