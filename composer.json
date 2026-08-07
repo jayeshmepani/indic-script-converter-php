@@ -20,8 +20,10 @@
   "license": "MIT",
   "authors": [
     {
-      "name": "Jayesh Patel",
-      "email": "jayeshmepani777@gmail.com"
+      "name": "Jayesh Mepani",
+      "email": "jayeshmepani777@gmail.com",
+      "homepage": "https://github.com/jayeshmepani",
+      "role": "Developer"
     }
   ],
   "require": {
