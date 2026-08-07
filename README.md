@@ -1,4 +1,4 @@
-# indic-script-converter — PHP port
+# lipimala — PHP
 
 A PHP **8.3+** port of the supplied Dart/Python Indic-script conversion libraries. It preserves the same conversion tables, profile defaults, contextual rules, Vedic handling, canonical reverse conversion, exact round-trip result envelope, and checksummed exact-source metadata format. The direct Gujarati ↔ Devanagari converter is included as well.
 
@@ -30,7 +30,7 @@ The source project uses `extendedIndic` as the default forward profile, and this
 No dependency install is required for a checkout:
 
 ```php
-require '/path/to/indic-script-converter-php/autoload.php';
+require '/path/to/lipimala-php/autoload.php';
 ```
 
 Composer projects can also load the package from a local/path repository. The package requirement is:
