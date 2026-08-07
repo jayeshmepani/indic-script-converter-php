@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace IndicScriptConverter;
+namespace Lipimala;
 
 /**
  * Generated from the official Unicode Character Database 17.0.0.

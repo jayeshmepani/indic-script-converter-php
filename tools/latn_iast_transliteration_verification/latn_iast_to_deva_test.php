@@ -6,14 +6,14 @@ require_once __DIR__ . '/../../autoload.php';
 require_once __DIR__ . '/example_latn_iast.php';
 require_once __DIR__ . '/_common.php';
 
-use IndicScriptConverter\IastToDevanagariDigitPolicy;
-use IndicScriptConverter\IastToDevanagariOptions;
-use IndicScriptConverter\IastToDevanagariPunctuationPolicy;
+use Lipimala\IastToDevanagariDigitPolicy;
+use Lipimala\IastToDevanagariOptions;
+use Lipimala\IastToDevanagariPunctuationPolicy;
 
-use function IndicScriptConverter\toDevanagariFromIast;
-use function IndicScriptConverter\Verification\jsonText;
+use function Lipimala\toDevanagariFromIast;
+use function Lipimala\Verification\jsonText;
 
-use const IndicScriptConverter\Verification\TRANSLITERATION_SMOKE_SAMPLES;
+use const Lipimala\Verification\TRANSLITERATION_SMOKE_SAMPLES;
 
 echo str_repeat('-', 64), PHP_EOL;
 echo ' 1. DEVANAGARI TRANSLITERATOR SAMPLES', PHP_EOL;

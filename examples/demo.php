@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../autoload.php';
 
-use IndicScriptConverter\IastToDevanagariOptions;
-use IndicScriptConverter\IastToGujaratiOptions;
-use IndicScriptConverter\IndicScriptConversionOptions;
+use Lipimala\IastToDevanagariOptions;
+use Lipimala\IastToGujaratiOptions;
+use Lipimala\IndicScriptConversionOptions;
 
-use function IndicScriptConverter\toCanonicalDevanagariFromGujarati;
-use function IndicScriptConverter\toCanonicalGujaratiFromDevanagari;
-use function IndicScriptConverter\toDevanagariFromIast;
-use function IndicScriptConverter\toExactDevanagariFromGujarati;
-use function IndicScriptConverter\toExactIastFromDevanagari;
-use function IndicScriptConverter\toExactIastFromGujarati;
-use function IndicScriptConverter\toGujaratiFromIast;
-use function IndicScriptConverter\toPlainEnglishFromIast;
+use function Lipimala\toCanonicalDevanagariFromGujarati;
+use function Lipimala\toCanonicalGujaratiFromDevanagari;
+use function Lipimala\toDevanagariFromIast;
+use function Lipimala\toExactDevanagariFromGujarati;
+use function Lipimala\toExactIastFromDevanagari;
+use function Lipimala\toExactIastFromGujarati;
+use function Lipimala\toGujaratiFromIast;
+use function Lipimala\toPlainEnglishFromIast;
 
 $source = 'Kṛṣṇa / Kr̥ṣṇa / ḫāna / ṣ́akti';
 

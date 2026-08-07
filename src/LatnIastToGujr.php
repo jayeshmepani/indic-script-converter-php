@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace IndicScriptConverter;
+namespace Lipimala;
 
 require_once __DIR__ . '/Forward.php';
 

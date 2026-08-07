@@ -53,11 +53,11 @@ declare(strict_types=1);
 
 require __DIR__ . '/autoload.php';
 
-use function IndicScriptConverter\toCanonicalIastFromDevanagari;
-use function IndicScriptConverter\toCanonicalIastFromGujarati;
-use function IndicScriptConverter\toDevanagariFromIast;
-use function IndicScriptConverter\toGujaratiFromIast;
-use function IndicScriptConverter\toPlainEnglishFromIast;
+use function Lipimala\toCanonicalIastFromDevanagari;
+use function Lipimala\toCanonicalIastFromGujarati;
+use function Lipimala\toDevanagariFromIast;
+use function Lipimala\toGujaratiFromIast;
+use function Lipimala\toPlainEnglishFromIast;
 
 echo toDevanagariFromIast('Kṛṣṇa');             // कृष्ण
 echo toGujaratiFromIast('Kṛṣṇa');               // કૃષ્ણ
@@ -71,8 +71,8 @@ echo toCanonicalIastFromGujarati('કૃષ્ણ');      // kṛṣṇa
 The default is `extendedIndic`:
 
 ```php
-use IndicScriptConverter\DevanagariRomanizationProfile;
-use IndicScriptConverter\IastToDevanagariOptions;
+use Lipimala\DevanagariRomanizationProfile;
+use Lipimala\IastToDevanagariOptions;
 
 $options = new IastToDevanagariOptions(
     profile: DevanagariRomanizationProfile::EXTENDED_INDIC,
@@ -100,9 +100,9 @@ The forward script APIs expose the same policy families as the source implementa
 Visible Brahmic output is necessarily many-to-one. Case, source normalization, aliases, and equivalent extended spellings can collapse to the same visible script. Exact recovery therefore uses the same invisible Unicode-Tag trailer as the Dart/Python/JavaScript implementations.
 
 ```php
-use IndicScriptConverter\IastToDevanagariOptions;
-use function IndicScriptConverter\toDevanagariFromIast;
-use function IndicScriptConverter\toExactIastFromDevanagari;
+use Lipimala\IastToDevanagariOptions;
+use function Lipimala\toDevanagariFromIast;
+use function Lipimala\toExactIastFromDevanagari;
 
 $source = 'Kṛṣṇa / Kr̥ṣṇa / ḫāna / ṣ́akti';
 
@@ -139,8 +139,8 @@ Canonical reverse cannot infer which Latin alias/case/normalization originally p
 Canonical visible conversion:
 
 ```php
-use function IndicScriptConverter\toCanonicalDevanagariFromGujarati;
-use function IndicScriptConverter\toCanonicalGujaratiFromDevanagari;
+use function Lipimala\toCanonicalDevanagariFromGujarati;
+use function Lipimala\toCanonicalGujaratiFromDevanagari;
 
 echo toCanonicalGujaratiFromDevanagari('कृष्ण'); // કૃષ્ણ
 echo toCanonicalDevanagariFromGujarati('કૃષ્ણ'); // कृष्ण
@@ -149,9 +149,9 @@ echo toCanonicalDevanagariFromGujarati('કૃષ્ણ'); // कृष्ण
 The two scripts have unequal Unicode repertoires, so visible conversion is non-injective. Exact script-source recovery uses a typed source marker inside the same metadata trailer:
 
 ```php
-use IndicScriptConverter\IndicScriptConversionOptions;
-use function IndicScriptConverter\toCanonicalGujaratiFromDevanagari;
-use function IndicScriptConverter\toExactDevanagariFromGujarati;
+use Lipimala\IndicScriptConversionOptions;
+use function Lipimala\toCanonicalGujaratiFromDevanagari;
+use function Lipimala\toExactDevanagariFromGujarati;
 
 $source = 'ऄ ऎ ऍ ॲ ऒ ऑ ॵ ळ ऴ ग़ ॻ ड़ ॸ ॾ';
 
@@ -176,7 +176,7 @@ The forward implementation keeps the source library's Unicode-recommended Brahmi
 ## Exact Round-Trip envelope
 
 ```php
-use function IndicScriptConverter\toDevanagari;
+use function Lipimala\toDevanagari;
 
 $result = toDevanagari('Kṛṣṇa');
 $json = $result->toJsonText();

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace IndicScriptConverter\Verification;
+namespace Lipimala\Verification;
 
 /** Index-aligned Devanagari verification corpus ported from the Dart/Python source. */
 const DEVANAGARI_SMOKE_SAMPLES = [

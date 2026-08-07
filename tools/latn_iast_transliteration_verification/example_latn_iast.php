@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace IndicScriptConverter\Verification;
+namespace Lipimala\Verification;
 
 /** Index-aligned Latin/IAST verification corpus ported from the Dart/Python source. */
 const TRANSLITERATION_SMOKE_SAMPLES = [

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace IndicScriptConverter\Verification;
+namespace Lipimala\Verification;
 
 function jsonText(string $value): string
 {

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace IndicScriptConverter\Verification;
+namespace Lipimala\Verification;
 
 /** Index-aligned Gujarati verification corpus ported from the Dart/Python source. */
 const GUJARATI_SMOKE_SAMPLES = [

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace IndicScriptConverter;
+namespace Lipimala;
 
 use InvalidArgumentException;
 use JsonSerializable;
