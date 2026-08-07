@@ -28,10 +28,10 @@ use IndicScriptConverter\IndicScriptConversionOptions;
 use IndicScriptConverter\IndicScriptDigitPolicy;
 use IndicScriptConverter\IndicScriptUnknownPolicy;
 use IndicScriptConverter\JnaPolicy;
-use IndicScriptConverter\LosslessTransliterationResult;
 use IndicScriptConverter\NyaPolicy;
 use IndicScriptConverter\PlainEnglishRomanizationProfile;
 use IndicScriptConverter\ScriptToIastOptions;
+use IndicScriptConverter\TransliterationResult;
 use IndicScriptConverter\Unicode;
 use IndicScriptConverter\UnicodeData;
 use IndicScriptConverter\UnicodeNormalizationForm;
@@ -52,7 +52,7 @@ use function IndicScriptConverter\toExactIastFromDevanagari;
 use function IndicScriptConverter\toExactIastFromGujarati;
 use function IndicScriptConverter\toGujaratiFromDevanagari;
 use function IndicScriptConverter\toGujaratiFromIast;
-use function IndicScriptConverter\toLosslessPlainEnglish;
+use function IndicScriptConverter\toPlainEnglish;
 use function IndicScriptConverter\toPlainEnglishFromIast;
 
 use const IndicScriptConverter\Verification\DEVANAGARI_SMOKE_SAMPLES;
@@ -352,9 +352,9 @@ test('visible and metadata tampering invalidates exact recovery', static functio
     same(hasEmbeddedExactSource(Unicode::fromCodePoints($chars)), false);
 });
 
-test('lossless envelope JSON round-trip', static function (): void {
-    $result = toLosslessPlainEnglish('Kṛṣṇa ā́tman ḷa');
-    $restored = LosslessTransliterationResult::fromJsonText($result->toJsonText());
+test('exact round-trip envelope JSON round-trip', static function (): void {
+    $result = toPlainEnglish('Kṛṣṇa ā́tman ḷa');
+    $restored = TransliterationResult::fromJsonText($result->toJsonText());
     same($restored->toJson(), $result->toJson());
     same($restored->restoreOriginal(), 'Kṛṣṇa ā́tman ḷa');
 });

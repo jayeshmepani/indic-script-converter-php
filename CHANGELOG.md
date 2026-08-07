@@ -15,7 +15,7 @@
 - Ported canonical Devanagari/Gujarati reverse conversion.
 - Ported Vedic accent handling and accent reattachment.
 - Ported Unicode normalization controls.
-- Ported the lossless result envelope and JSON schema.
+- Ported the exact round-trip result envelope and JSON schema.
 - Ported the invisible exact-source Unicode Tag trailer byte-for-byte.
 - Added all 497 index-aligned corpus cases in five conversion directions.
 - Added all 22 Vedic fixtures.

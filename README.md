@@ -1,6 +1,6 @@
 # indic-script-converter — PHP port
 
-A PHP **8.3+** port of the supplied Dart/Python Indic-script conversion libraries. It preserves the same conversion tables, profile defaults, contextual rules, Vedic handling, canonical reverse conversion, lossless result envelope, and checksummed exact-source metadata format. The direct Gujarati ↔ Devanagari converter is included as well.
+A PHP **8.3+** port of the supplied Dart/Python Indic-script conversion libraries. It preserves the same conversion tables, profile defaults, contextual rules, Vedic handling, canonical reverse conversion, exact round-trip result envelope, and checksummed exact-source metadata format. The direct Gujarati ↔ Devanagari converter is included as well.
 
 ## Runtime
 
@@ -23,7 +23,7 @@ The source project uses `extendedIndic` as the default forward profile, and this
 - Devanagari → Gujarati
 - Gujarati → Devanagari
 - metadata-backed exact source recovery
-- lossless JSON envelope serialization
+- exact round-trip JSON envelope serialization
 
 ## Installation
 
@@ -162,23 +162,23 @@ assert(toExactDevanagariFromGujarati($taggedGujarati) === $source);
 
 The opposite direction uses `toCanonicalDevanagariFromGujarati()` and `toExactGujaratiFromDevanagari()`.
 
-Direct conversion also exposes source-digit preservation, target-digit conversion, unknown-character preservation/strict error, normalization, whitespace collapse, and lossless-envelope APIs.
+Direct conversion also exposes source-digit preservation, target-digit conversion, unknown-character preservation/strict error, normalization, whitespace collapse, and exact round-trip-envelope APIs.
 
 ## Vedic ordering
 
 The forward implementation keeps the source library's Unicode-recommended Brahmic storage order: vowel/matra, then bindu/visarga, then svara. Forms such as `वसोः॑` and `जुष्टं॑` therefore remain unchanged from the verified Dart behavior.
 
-## Lossless envelope
+## Exact Round-Trip envelope
 
 ```php
-use function IndicScriptConverter\toLosslessDevanagari;
+use function IndicScriptConverter\toDevanagari;
 
-$result = toLosslessDevanagari('Kṛṣṇa');
+$result = toDevanagari('Kṛṣṇa');
 $json = $result->toJsonText();
 $original = $result->restoreOriginal();
 ```
 
-The envelope schema is `lossless-indic-transliteration/1` and includes original code-point integrity checking.
+The envelope schema is `exact round-trip-indic-transliteration/1` and includes original code-point integrity checking.
 
 ## CLI output generators
 
@@ -208,6 +208,6 @@ php tools/latn_iast_transliteration_verification/run_all.php
 php tests/run.php
 ```
 
-The bundled regression suite verifies the five original 497-case directions, both 497-case direct script directions, all 22 Vedic fixtures, profile/option behavior, exact metadata, tamper rejection, lossless JSON envelopes, and exact direct-script corpus recovery.
+The bundled regression suite verifies the five original 497-case directions, both 497-case direct script directions, all 22 Vedic fixtures, profile/option behavior, exact metadata, tamper rejection, exact round-trip JSON envelopes, and exact direct-script corpus recovery.
 
 See `PORT_VERIFICATION.md` for the executed result and parity counts.

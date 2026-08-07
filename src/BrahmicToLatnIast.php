@@ -357,12 +357,12 @@ function visibleGujaratiWithoutExactSourceMetadata(string $text): string
     return stripExactSourceMetadata($text);
 }
 
-function toLosslessCanonicalIastFromDevanagari(string $text, ?ScriptToIastOptions $options = null): LosslessTransliterationResult
+function toCanonicalIastFromDevanagari(string $text, ?ScriptToIastOptions $options = null): TransliterationResult
 {
     $opts = $options ?? new ScriptToIastOptions;
     $visible = stripExactSourceMetadata($text);
     $normalized = normalizeUnicode($visible, $opts->inputNormalization);
-    return new LosslessTransliterationResult(
+    return new TransliterationResult(
         original: $text,
         normalizedInput: $normalized,
         rendered: BrahmicToIastConverter::convert($visible, devanagariScriptConfig(), $opts),
@@ -378,12 +378,12 @@ function toLosslessCanonicalIastFromDevanagari(string $text, ?ScriptToIastOption
     );
 }
 
-function toLosslessCanonicalIastFromGujarati(string $text, ?ScriptToIastOptions $options = null): LosslessTransliterationResult
+function toCanonicalIastFromGujarati(string $text, ?ScriptToIastOptions $options = null): TransliterationResult
 {
     $opts = $options ?? new ScriptToIastOptions;
     $visible = stripExactSourceMetadata($text);
     $normalized = normalizeUnicode($visible, $opts->inputNormalization);
-    return new LosslessTransliterationResult(
+    return new TransliterationResult(
         original: $text,
         normalizedInput: $normalized,
         rendered: BrahmicToIastConverter::convert($visible, gujaratiScriptConfig(), $opts),

@@ -71,7 +71,7 @@ final readonly class TransliterationIssue implements JsonSerializable
     }
 }
 
-final readonly class LosslessTransliterationResult implements JsonSerializable
+final readonly class TransliterationResult implements JsonSerializable
 {
     /** @param list<TransliterationIssue> $issues */
     public function __construct(
@@ -116,7 +116,7 @@ final readonly class LosslessTransliterationResult implements JsonSerializable
     public function toJson(): array
     {
         return [
-            'schema' => 'lossless-indic-transliteration/1',
+            'schema' => 'exact round-trip-indic-transliteration/1',
             'original' => $this->original,
             'originalCodePoints' => $this->originalCodePoints(),
             'normalizedInput' => $this->normalizedInput,
@@ -137,7 +137,7 @@ final readonly class LosslessTransliterationResult implements JsonSerializable
     /** @param array<string,mixed> $value */
     public static function fromJson(array $value): self
     {
-        if (($value['schema'] ?? null) !== 'lossless-indic-transliteration/1') {
+        if (($value['schema'] ?? null) !== 'exact round-trip-indic-transliteration/1') {
             throw new InvalidArgumentException('Unsupported transliteration envelope.');
         }
 

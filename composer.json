@@ -1,13 +1,13 @@
 {
   "name": "jayeshmepani/indic-script-converter",
-  "description": "Lossless IAST/extended Indic transliteration for Devanagari, Gujarati, plain English, canonical reverse conversion, and direct Gujarati/Devanagari conversion.",
+  "description": "Exact Round-Trip IAST/extended Indic transliteration for Devanagari, Gujarati, plain English, canonical reverse conversion, and direct Gujarati/Devanagari conversion.",
   "keywords": [
     "transliteration",
     "indic",
     "iast",
     "devanagari",
     "gujarati",
-    "lossless",
+    "exact round-trip",
     "sanskrit",
     "vedic"
   ],

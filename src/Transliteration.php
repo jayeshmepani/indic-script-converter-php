@@ -9,12 +9,12 @@ require_once __DIR__ . '/LatnIastToGujr.php';
 require_once __DIR__ . '/LatnIastTranscription.php';
 require_once __DIR__ . '/BrahmicToLatnIast.php';
 
-function toLosslessDevanagari(
+function toDevanagari(
     string $text,
     ?IastToDevanagariOptions $options = null,
     UnicodeNormalizationForm $inputNormalization = UnicodeNormalizationForm::NFD,
     UnicodeNormalizationForm $outputNormalization = UnicodeNormalizationForm::NFC,
-): LosslessTransliterationResult {
+): TransliterationResult {
     $options ??= new IastToDevanagariOptions;
     $normalizedInput = normalizeUnicode($text, $inputNormalization);
     $directlyRendered = toDevanagariFromIast($normalizedInput, $options);
@@ -23,7 +23,7 @@ function toLosslessDevanagari(
         ? embedExactSourceMetadata($normalizedVisible, $text)
         : $normalizedVisible;
 
-    return new LosslessTransliterationResult(
+    return new TransliterationResult(
         original: $text,
         normalizedInput: $normalizedInput,
         rendered: $rendered,
@@ -43,21 +43,21 @@ function toLosslessDevanagari(
     );
 }
 
-function to_lossless_devanagari(
+function to_devanagari(
     string $text,
     ?IastToDevanagariOptions $options = null,
     UnicodeNormalizationForm $inputNormalization = UnicodeNormalizationForm::NFD,
     UnicodeNormalizationForm $outputNormalization = UnicodeNormalizationForm::NFC,
-): LosslessTransliterationResult {
-    return toLosslessDevanagari($text, $options, $inputNormalization, $outputNormalization);
+): TransliterationResult {
+    return toDevanagari($text, $options, $inputNormalization, $outputNormalization);
 }
 
-function toLosslessGujarati(
+function toGujarati(
     string $text,
     ?IastToGujaratiOptions $options = null,
     UnicodeNormalizationForm $inputNormalization = UnicodeNormalizationForm::NFD,
     UnicodeNormalizationForm $outputNormalization = UnicodeNormalizationForm::NFC,
-): LosslessTransliterationResult {
+): TransliterationResult {
     $options ??= new IastToGujaratiOptions;
     $normalizedInput = normalizeUnicode($text, $inputNormalization);
     $directlyRendered = toGujaratiFromIast($normalizedInput, $options);
@@ -66,7 +66,7 @@ function toLosslessGujarati(
         ? embedExactSourceMetadata($normalizedVisible, $text)
         : $normalizedVisible;
 
-    return new LosslessTransliterationResult(
+    return new TransliterationResult(
         original: $text,
         normalizedInput: $normalizedInput,
         rendered: $rendered,
@@ -86,27 +86,27 @@ function toLosslessGujarati(
     );
 }
 
-function to_lossless_gujarati(
+function to_gujarati(
     string $text,
     ?IastToGujaratiOptions $options = null,
     UnicodeNormalizationForm $inputNormalization = UnicodeNormalizationForm::NFD,
     UnicodeNormalizationForm $outputNormalization = UnicodeNormalizationForm::NFC,
-): LosslessTransliterationResult {
-    return toLosslessGujarati($text, $options, $inputNormalization, $outputNormalization);
+): TransliterationResult {
+    return toGujarati($text, $options, $inputNormalization, $outputNormalization);
 }
 
-function toLosslessPlainEnglish(
+function toPlainEnglish(
     string $text,
     ?IastPlainEnglishOptions $options = null,
     UnicodeNormalizationForm $inputNormalization = UnicodeNormalizationForm::NFD,
     UnicodeNormalizationForm $outputNormalization = UnicodeNormalizationForm::NFC,
-): LosslessTransliterationResult {
+): TransliterationResult {
     $options ??= new IastPlainEnglishOptions;
     $normalizedInput = normalizeUnicode($text, $inputNormalization);
     $rendered = normalizeUnicode(toPlainEnglishFromIast($normalizedInput, $options), $outputNormalization);
     $isHunterian = $options->profile === PlainEnglishRomanizationProfile::HUNTERIAN;
 
-    return new LosslessTransliterationResult(
+    return new TransliterationResult(
         original: $text,
         normalizedInput: $normalizedInput,
         rendered: $rendered,
@@ -124,11 +124,11 @@ function toLosslessPlainEnglish(
     );
 }
 
-function to_lossless_plain_english(
+function to_plain_english(
     string $text,
     ?IastPlainEnglishOptions $options = null,
     UnicodeNormalizationForm $inputNormalization = UnicodeNormalizationForm::NFD,
     UnicodeNormalizationForm $outputNormalization = UnicodeNormalizationForm::NFC,
-): LosslessTransliterationResult {
-    return toLosslessPlainEnglish($text, $options, $inputNormalization, $outputNormalization);
+): TransliterationResult {
+    return toPlainEnglish($text, $options, $inputNormalization, $outputNormalization);
 }
