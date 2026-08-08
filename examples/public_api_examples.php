@@ -16,6 +16,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../autoload.php';
 
 use Lipimala\DevanagariRomanizationProfile;
+use Lipimala\EmbeddedExactSource;
 use Lipimala\FinalAPolicy;
 use Lipimala\GlottalStopPolicy;
 use Lipimala\GujaratiRomanizationProfile;
@@ -38,10 +39,13 @@ use Lipimala\NyaPolicy;
 use Lipimala\PlainEnglishRomanizationProfile;
 use Lipimala\ScriptToIastOptions;
 use Lipimala\TransliterationResult;
+use Lipimala\Unicode;
 use Lipimala\UnicodeNormalizationForm;
 
 use function Lipimala\embedExactSourceMetadata;
 use function Lipimala\hasEmbeddedExactSource;
+use function Lipimala\hasExactDevanagariScriptSourceMetadata;
+use function Lipimala\hasExactGujaratiScriptSourceMetadata;
 use function Lipimala\normalizeUnicode;
 use function Lipimala\recoverEmbeddedExactSource;
 use function Lipimala\stripExactSourceMetadata;
@@ -63,6 +67,8 @@ use function Lipimala\toIastFromDevanagari;
 use function Lipimala\toIastFromGujarati;
 use function Lipimala\toPlainEnglish;
 use function Lipimala\toPlainEnglishFromIast;
+use function Lipimala\tryDecodeExactSourceMetadata;
+use function Lipimala\visibleWithoutExactSourceMetadata;
 
 const IAST = 'Kṛṣṇa ā́tman';
 const VEDIC = 'vásōḥ';
@@ -354,13 +360,27 @@ function examplesDirectScript(): void
 // ---------------------------------------------------------------------------
 function examplesMetadata(): void
 {
-    banner('7. Exact-source metadata helpers');
+    banner('7. Exact-source metadata helpers & Unicode utilities');
 
     $rendered = toDevanagariFromIast(IAST);
     $tagged = embedExactSourceMetadata($rendered, IAST);
     show('hasEmbeddedExactSource', hasEmbeddedExactSource($tagged));
     show('recover', recoverEmbeddedExactSource($tagged));
     show('strip', stripExactSourceMetadata($tagged));
+    show('visibleWithoutExactSourceMetadata', visibleWithoutExactSourceMetadata($tagged));
+
+    $meta = tryDecodeExactSourceMetadata($tagged);
+    if ($meta instanceof EmbeddedExactSource) {
+        show('meta.originalSource', $meta->originalSource);
+        show('meta.visibleText', $meta->visibleText);
+    }
+
+    $gujrTagged = toCanonicalGujaratiFromDevanagari('ऄ ऎ ऍ', new IndicScriptConversionOptions(embedExactSourceMetadata: true));
+    show('hasExactGujaratiScriptSourceMetadata', hasExactGujaratiScriptSourceMetadata($gujrTagged));
+    $devaTagged = toCanonicalDevanagariFromGujarati('અ એ ઍ', new IndicScriptConversionOptions(embedExactSourceMetadata: true));
+    show('hasExactDevanagariScriptSourceMetadata', hasExactDevanagariScriptSourceMetadata($devaTagged));
+
+    show('Unicode::isCombiningMark(0x0301)', Unicode::isCombiningMark(0x0301));
     show('normalize NFC', normalizeUnicode(IAST, UnicodeNormalizationForm::NFC));
     show('normalize NFD', normalizeUnicode(IAST, UnicodeNormalizationForm::NFD));
 }
