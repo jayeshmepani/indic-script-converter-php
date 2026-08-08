@@ -27,6 +27,10 @@ return RectorConfig::configure()
         __DIR__ . '/tests/fixtures',
     ])
     ->withPhpSets()
+    ->withComposerBased(
+        laravel: true,
+        phpunit: true,
+    )
     ->withPreparedSets(
         deadCode: false,
         codeQuality: true,
