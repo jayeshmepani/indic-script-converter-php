@@ -337,9 +337,14 @@ function to_canonical_iast_from_gujarati(string $text, ?ScriptToIastOptions $opt
     return toCanonicalIastFromGujarati($text, $options);
 }
 
-function hasExactDevanagariSourceMetadata(string $text): bool
+function hasExactDevanagariIastSourceMetadata(string $text): bool
 {
     return hasEmbeddedExactSource($text);
+}
+
+function has_exact_devanagari_iast_source_metadata(string $text): bool
+{
+    return hasExactDevanagariIastSourceMetadata($text);
 }
 
 function visibleDevanagariWithoutExactSourceMetadata(string $text): string
@@ -347,9 +352,14 @@ function visibleDevanagariWithoutExactSourceMetadata(string $text): string
     return stripExactSourceMetadata($text);
 }
 
-function hasExactGujaratiSourceMetadata(string $text): bool
+function hasExactGujaratiIastSourceMetadata(string $text): bool
 {
     return hasEmbeddedExactSource($text);
+}
+
+function has_exact_gujarati_iast_source_metadata(string $text): bool
+{
+    return hasExactGujaratiIastSourceMetadata($text);
 }
 
 function visibleGujaratiWithoutExactSourceMetadata(string $text): string

@@ -483,6 +483,11 @@ function hasExactGujaratiScriptSourceMetadata(string $input): bool
     return recoverTypedExactSource($input, GUJR_SOURCE_METADATA_PREFIX) !== null;
 }
 
+function hasExactGujaratiSourceMetadata(string $input): bool
+{
+    return hasExactGujaratiScriptSourceMetadata($input);
+}
+
 function has_exact_gujarati_source_metadata(string $input): bool
 {
     return hasExactGujaratiScriptSourceMetadata($input);
@@ -491,6 +496,11 @@ function has_exact_gujarati_source_metadata(string $input): bool
 function hasExactDevanagariScriptSourceMetadata(string $input): bool
 {
     return recoverTypedExactSource($input, DEVA_SOURCE_METADATA_PREFIX) !== null;
+}
+
+function hasExactDevanagariSourceMetadata(string $input): bool
+{
+    return hasExactDevanagariScriptSourceMetadata($input);
 }
 
 function has_exact_devanagari_source_metadata(string $input): bool
