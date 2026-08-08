@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1
+
+- Synchronized package version across all runtimes to 1.0.1.
+- Resolved function name redeclaration error in `BrahmicToLatnIast.php` by using `hasExactDevanagariIastSourceMetadata` and `hasExactGujaratiIastSourceMetadata`.
+- Added top-level metadata helpers (`hasExactGujaratiSourceMetadata`, `hasExactDevanagariSourceMetadata`, `visibleWithoutExactSourceMetadata`).
+- Added exhaustive public API example runner exercising all 35 core functions, options, and enums.
+
 ## 1.0.0
 
 - Added canonical Devanagari/Gujarati script-to-script conversion options and policies.
