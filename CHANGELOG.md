@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2
+
+- Added bulk array transliteration functions (`toDevanagariFromIastList`, `toGujaratiFromIastList`, `toPlainEnglishFromIastList`, `toCanonicalGujaratiFromDevanagariList`, `toCanonicalDevanagariFromGujaratiList`, `toExactDevanagariFromGujaratiList`, `toExactGujaratiFromDevanagariList`, `toDevanagariList`, `toGujaratiList`, `toPlainEnglishList`).
+
 ## 1.0.1
 
 - Synchronized package version across all runtimes to 1.0.1.
