@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Lipimala\Tests;
 
+use Lipimala\DigitPolicy;
+use Lipimala\IastPlainEnglishOptions;
+use Lipimala\IastToDevanagariOptions;
+use Lipimala\PlainEnglishFinalAPolicy;
 use PHPUnit\Framework\TestCase;
 
 use function Lipimala\toCanonicalDevanagariFromGujaratiList;
@@ -68,13 +72,13 @@ final class ListConvertersTest extends TestCase
 
         $devaDigits = toDevanagariFromIastList(
             $items,
-            new \Lipimala\IastToDevanagariOptions(digitPolicy: \Lipimala\DigitPolicy::ConvertToScript)
+            new IastToDevanagariOptions(digitPolicy: DigitPolicy::ConvertToScript)
         );
         self::assertSame(['राम १२३', 'ज्ञान'], $devaDigits);
 
         $plainKeepFinalA = toPlainEnglishFromIastList(
             $items,
-            new \Lipimala\IastPlainEnglishOptions(finalAPolicy: \Lipimala\PlainEnglishFinalAPolicy::Keep)
+            new IastPlainEnglishOptions(finalAPolicy: PlainEnglishFinalAPolicy::Keep)
         );
         self::assertSame(['Rama 123', 'gyana'], $plainKeepFinalA);
     }
