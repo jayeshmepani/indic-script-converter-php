@@ -8,35 +8,57 @@ use PHPUnit\Framework\TestCase;
 
 use function Lipimala\toCanonicalDevanagariFromGujaratiList;
 use function Lipimala\toCanonicalGujaratiFromDevanagariList;
+use function Lipimala\toCanonicalIastFromDevanagariList;
+use function Lipimala\toCanonicalIastFromGujaratiList;
 use function Lipimala\toDevanagariFromIastList;
 use function Lipimala\toDevanagariList;
 use function Lipimala\toGujaratiFromIastList;
+use function Lipimala\toGujaratiList;
 use function Lipimala\toPlainEnglishFromIastList;
+use function Lipimala\toPlainEnglishList;
 
 final class ListConvertersTest extends TestCase
 {
-    public function testBulkListConverters(): void
+    public function testBulkListConvertersAllDirections(): void
     {
-        $items = ['Kṛṣṇa', 'Rāma', 'jñāna'];
+        $iastItems = ['Kṛṣṇa', 'Rāma', 'jñāna'];
 
-        $devaList = toDevanagariFromIastList($items);
+        // 1. Latin (IAST) → Devanagari / Gujarati / Plain English
+        $devaList = toDevanagariFromIastList($iastItems);
         self::assertSame(['कृष्ण', 'राम', 'ज्ञान'], $devaList);
 
-        $gujrList = toGujaratiFromIastList($items);
+        $gujrList = toGujaratiFromIastList($iastItems);
         self::assertSame(['કૃષ્ણ', 'રામ', 'જ્ઞાન'], $gujrList);
 
-        $plainList = toPlainEnglishFromIastList($items);
+        $plainList = toPlainEnglishFromIastList($iastItems);
         self::assertSame(['Krishna', 'Ram', 'gyan'], $plainList);
 
+        // 2. Brahmic → Latin IAST
+        $iastFromDeva = toCanonicalIastFromDevanagariList($devaList);
+        self::assertSame(['kṛṣṇa', 'rāma', 'jñāna'], $iastFromDeva);
+
+        $iastFromGujr = toCanonicalIastFromGujaratiList($gujrList);
+        self::assertSame(['kṛṣṇa', 'rāma', 'jñāna'], $iastFromGujr);
+
+        // 3. Direct Devanagari ↔ Gujarati
         $gujrDirect = toCanonicalGujaratiFromDevanagariList($devaList);
         self::assertSame(['કૃષ્ણ', 'રામ', 'જ્ઞાન'], $gujrDirect);
 
         $devaDirect = toCanonicalDevanagariFromGujaratiList($gujrList);
         self::assertSame(['कृष्ण', 'राम', 'ज्ञान'], $devaDirect);
 
-        $envList = toDevanagariList($items);
-        self::assertCount(3, $envList);
-        self::assertSame('कृष्ण', $envList[0]->rendered);
-        self::assertSame('राम', $envList[1]->rendered);
+        // 4. Result Envelopes
+        $envDeva = toDevanagariList($iastItems);
+        self::assertCount(3, $envDeva);
+        self::assertSame('कृष्ण', $envDeva[0]->rendered);
+        self::assertSame('राम', $envDeva[1]->rendered);
+
+        $envGujr = toGujaratiList($iastItems);
+        self::assertCount(3, $envGujr);
+        self::assertSame('કૃષ્ણ', $envGujr[0]->rendered);
+
+        $envPlain = toPlainEnglishList($iastItems);
+        self::assertCount(3, $envPlain);
+        self::assertSame('Krishna', $envPlain[0]->rendered);
     }
 }

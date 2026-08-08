@@ -51,11 +51,14 @@ use function Lipimala\recoverEmbeddedExactSource;
 use function Lipimala\stripExactSourceMetadata;
 use function Lipimala\toCanonicalDevanagariFromGujarati;
 use function Lipimala\toCanonicalGujaratiFromDevanagari;
+use function Lipimala\toCanonicalGujaratiFromDevanagariList;
 use function Lipimala\toCanonicalIastFromDevanagari;
 use function Lipimala\toCanonicalIastFromGujarati;
 use function Lipimala\toDevanagari;
 use function Lipimala\toDevanagariFromGujarati;
 use function Lipimala\toDevanagariFromIast;
+use function Lipimala\toDevanagariFromIastList;
+use function Lipimala\toDevanagariList;
 use function Lipimala\toExactDevanagariFromGujarati;
 use function Lipimala\toExactGujaratiFromDevanagari;
 use function Lipimala\toExactIastFromDevanagari;
@@ -63,10 +66,12 @@ use function Lipimala\toExactIastFromGujarati;
 use function Lipimala\toGujarati;
 use function Lipimala\toGujaratiFromDevanagari;
 use function Lipimala\toGujaratiFromIast;
+use function Lipimala\toGujaratiFromIastList;
 use function Lipimala\toIastFromDevanagari;
 use function Lipimala\toIastFromGujarati;
 use function Lipimala\toPlainEnglish;
 use function Lipimala\toPlainEnglishFromIast;
+use function Lipimala\toPlainEnglishFromIastList;
 use function Lipimala\tryDecodeExactSourceMetadata;
 use function Lipimala\visibleWithoutExactSourceMetadata;
 
@@ -385,6 +390,26 @@ function examplesMetadata(): void
     show('normalize NFD', normalizeUnicode(IAST, UnicodeNormalizationForm::NFD));
 }
 
+// ---------------------------------------------------------------------------
+// 8. Bulk string array transliteration
+// ---------------------------------------------------------------------------
+function examplesBulkList(): void
+{
+    banner('8. Bulk String Array Transliteration (List API)');
+
+    $items = ['Kṛṣṇa', 'Rāma', 'jñāna'];
+    show('bulk IAST array', implode(', ', $items));
+    show('toDevanagariFromIastList', implode(', ', toDevanagariFromIastList($items)));
+    show('toGujaratiFromIastList', implode(', ', toGujaratiFromIastList($items)));
+    show('toPlainEnglishFromIastList', implode(', ', toPlainEnglishFromIastList($items)));
+
+    $devaList = toDevanagariFromIastList($items);
+    show('toCanonicalGujaratiFromDevanagariList', implode(', ', toCanonicalGujaratiFromDevanagariList($devaList)));
+
+    $envList = toDevanagariList($items);
+    show('toDevanagariList (rendered)', implode(', ', array_map(fn(TransliterationResult $r): string => $r->rendered, $envList)));
+}
+
 echo 'lipimala — PHP public API examples', PHP_EOL;
 examplesEnvelope();
 examplesIastToDeva();
@@ -393,4 +418,5 @@ examplesPlainEnglish();
 examplesReverse();
 examplesDirectScript();
 examplesMetadata();
+examplesBulkList();
 echo PHP_EOL, 'Done. All public-API example sections executed.', PHP_EOL;

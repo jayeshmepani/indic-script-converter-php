@@ -47,7 +47,8 @@
       "src/LatnIastTranscription.php",
       "src/BrahmicToLatnIast.php",
       "src/Transliteration.php",
-      "src/DevaGujrConverter.php"
+      "src/DevaGujrConverter.php",
+      "src/ListConverters.php"
     ]
   },
   "scripts": {

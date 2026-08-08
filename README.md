@@ -77,6 +77,21 @@ echo toCanonicalIastFromDevanagari('कृष्ण');    // kṛṣṇa
 echo toCanonicalIastFromGujarati('કૃષ્ણ');      // kṛṣṇa
 ```
 
+## Bulk Array Transliteration
+
+```php
+use function Lipimala\toDevanagariFromIastList;
+use function Lipimala\toGujaratiFromIastList;
+
+$items = ['Kṛṣṇa', 'Rāma', 'jñāna'];
+
+$devaList = toDevanagariFromIastList($items);
+// -> ['कृष्ण', 'राम', 'ज्ञान']
+
+$gujrList = toGujaratiFromIastList($items);
+// -> ['કૃષ્ણ', 'રામ', 'જ્ઞાન']
+```
+
 ## Forward profiles
 
 The default is `extendedIndic`:

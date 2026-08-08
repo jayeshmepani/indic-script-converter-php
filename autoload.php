@@ -12,3 +12,4 @@ require_once __DIR__ . '/src/LatnIastTranscription.php';
 require_once __DIR__ . '/src/BrahmicToLatnIast.php';
 require_once __DIR__ . '/src/Transliteration.php';
 require_once __DIR__ . '/src/DevaGujrConverter.php';
+require_once __DIR__ . '/src/ListConverters.php';

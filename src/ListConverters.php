@@ -47,6 +47,34 @@ function toPlainEnglishFromIastList(array $items, ?IastPlainEnglishOptions $opti
 }
 
 /**
+ * Smart converts an array of Devanagari strings back to IAST (recovers exact source if metadata present).
+ *
+ * @param array<string> $items array of Devanagari strings
+ * @param ScriptToIastOptions|null $options conversion options
+ *
+ * @return array<string> converted IAST strings
+ */
+function toIastFromDevanagariList(array $items, ?ScriptToIastOptions $options = null): array
+{
+    $options ??= new ScriptToIastOptions;
+    return array_map(static fn(string $item): string => toIastFromDevanagari($item, $options), $items);
+}
+
+/**
+ * Smart converts an array of Gujarati strings back to IAST (recovers exact source if metadata present).
+ *
+ * @param array<string> $items array of Gujarati strings
+ * @param ScriptToIastOptions|null $options conversion options
+ *
+ * @return array<string> converted IAST strings
+ */
+function toIastFromGujaratiList(array $items, ?ScriptToIastOptions $options = null): array
+{
+    $options ??= new ScriptToIastOptions;
+    return array_map(static fn(string $item): string => toIastFromGujarati($item, $options), $items);
+}
+
+/**
  * Bulk converts an array of Devanagari strings back to canonical IAST.
  *
  * @param array<string> $items array of Devanagari strings
@@ -86,6 +114,58 @@ function toCanonicalGujaratiFromDevanagariList(array $items, ?IndicScriptConvers
 {
     $options ??= new IndicScriptConversionOptions;
     return array_map(static fn(string $item): string => toCanonicalGujaratiFromDevanagari($item, $options), $items);
+}
+
+/**
+ * Recovers exact original IAST strings from an array of Devanagari strings.
+ *
+ * @param array<string> $items array of Devanagari strings
+ *
+ * @return array<string> converted IAST strings
+ */
+function toExactIastFromDevanagariList(array $items): array
+{
+    return array_map(toExactIastFromDevanagari(...), $items);
+}
+
+/**
+ * Recovers exact original IAST strings from an array of Gujarati strings.
+ *
+ * @param array<string> $items array of Gujarati strings
+ *
+ * @return array<string> converted IAST strings
+ */
+function toExactIastFromGujaratiList(array $items): array
+{
+    return array_map(toExactIastFromGujarati(...), $items);
+}
+
+/**
+ * Bulk converts an array of Devanagari strings to Gujarati strings (recovers metadata if present).
+ *
+ * @param array<string> $items array of Devanagari strings
+ * @param IndicScriptConversionOptions|null $options conversion options
+ *
+ * @return array<string> converted Gujarati strings
+ */
+function toGujaratiFromDevanagariList(array $items, ?IndicScriptConversionOptions $options = null): array
+{
+    $options ??= new IndicScriptConversionOptions;
+    return array_map(static fn(string $item): string => toGujaratiFromDevanagari($item, $options), $items);
+}
+
+/**
+ * Bulk converts an array of Gujarati strings to Devanagari strings (recovers metadata if present).
+ *
+ * @param array<string> $items array of Gujarati strings
+ * @param IndicScriptConversionOptions|null $options conversion options
+ *
+ * @return array<string> converted Devanagari strings
+ */
+function toDevanagariFromGujaratiList(array $items, ?IndicScriptConversionOptions $options = null): array
+{
+    $options ??= new IndicScriptConversionOptions;
+    return array_map(static fn(string $item): string => toDevanagariFromGujarati($item, $options), $items);
 }
 
 /**
@@ -130,37 +210,40 @@ function toExactGujaratiFromDevanagariList(array $items): array
  * Bulk converts an array of IAST strings returning an array of Devanagari TransliterationResult envelopes.
  *
  * @param array<string> $items array of strings
- * @param DevanagariRomanizationProfile $profile romanization profile
+ * @param IastToDevanagariOptions|null $options conversion options
  *
  * @return array<TransliterationResult> array of result envelopes
  */
-function toDevanagariList(array $items, DevanagariRomanizationProfile $profile = DevanagariRomanizationProfile::EXTENDED_INDIC): array
+function toDevanagariList(array $items, ?IastToDevanagariOptions $options = null): array
 {
-    return array_map(static fn(string $item): TransliterationResult => toDevanagari($item, $profile), $items);
+    $options ??= new IastToDevanagariOptions;
+    return array_map(static fn(string $item): TransliterationResult => toDevanagari($item, $options), $items);
 }
 
 /**
  * Bulk converts an array of IAST strings returning an array of Gujarati TransliterationResult envelopes.
  *
  * @param array<string> $items array of strings
- * @param GujaratiRomanizationProfile $profile romanization profile
+ * @param IastToGujaratiOptions|null $options conversion options
  *
  * @return array<TransliterationResult> array of result envelopes
  */
-function toGujaratiList(array $items, GujaratiRomanizationProfile $profile = GujaratiRomanizationProfile::EXTENDED_INDIC): array
+function toGujaratiList(array $items, ?IastToGujaratiOptions $options = null): array
 {
-    return array_map(static fn(string $item): TransliterationResult => toGujarati($item, $profile), $items);
+    $options ??= new IastToGujaratiOptions;
+    return array_map(static fn(string $item): TransliterationResult => toGujarati($item, $options), $items);
 }
 
 /**
  * Bulk converts an array of IAST strings returning an array of Plain English TransliterationResult envelopes.
  *
  * @param array<string> $items array of strings
- * @param PlainEnglishRomanizationProfile $profile romanization profile
+ * @param IastPlainEnglishOptions|null $options conversion options
  *
  * @return array<TransliterationResult> array of result envelopes
  */
-function toPlainEnglishList(array $items, PlainEnglishRomanizationProfile $profile = PlainEnglishRomanizationProfile::EXTENDED_INDIC): array
+function toPlainEnglishList(array $items, ?IastPlainEnglishOptions $options = null): array
 {
-    return array_map(static fn(string $item): TransliterationResult => toPlainEnglish($item, $profile), $items);
+    $options ??= new IastPlainEnglishOptions;
+    return array_map(static fn(string $item): TransliterationResult => toPlainEnglish($item, $options), $items);
 }
