@@ -61,4 +61,21 @@ final class ListConvertersTest extends TestCase
         self::assertCount(3, $envPlain);
         self::assertSame('Krishna', $envPlain[0]->rendered);
     }
+
+    public function testBulkListConvertersCustomOptions(): void
+    {
+        $items = ['Rāma 123', 'jñāna'];
+
+        $devaDigits = toDevanagariFromIastList(
+            $items,
+            new \Lipimala\IastToDevanagariOptions(digitPolicy: \Lipimala\DigitPolicy::ConvertToScript)
+        );
+        self::assertSame(['राम १२३', 'ज्ञान'], $devaDigits);
+
+        $plainKeepFinalA = toPlainEnglishFromIastList(
+            $items,
+            new \Lipimala\IastPlainEnglishOptions(finalAPolicy: \Lipimala\PlainEnglishFinalAPolicy::Keep)
+        );
+        self::assertSame(['Rama 123', 'gyana'], $plainKeepFinalA);
+    }
 }
