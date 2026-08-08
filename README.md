@@ -1,6 +1,17 @@
-# lipimala — PHP
+# lipimala — Indic Script Converter (PHP)
 
-A PHP **8.3+** port of the supplied Dart/Python Indic-script conversion libraries. It preserves the same conversion tables, profile defaults, contextual rules, Vedic handling, canonical reverse conversion, exact round-trip result envelope, and checksummed exact-source metadata format. The direct Gujarati ↔ Devanagari converter is included as well.
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/jayeshmepani/lipimala.svg?style=flat-square)](https://packagist.org/packages/jayeshmepani/lipimala)
+[![Total Downloads](https://img.shields.io/packagist/dt/jayeshmepani/lipimala.svg?style=flat-square)](https://packagist.org/packages/jayeshmepani/lipimala)
+[![PHP Version Require](https://img.shields.io/packagist/php-v/jayeshmepani/lipimala?style=flat-square)](https://packagist.org/packages/jayeshmepani/lipimala)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
+
+A PHP **8.3+** port of the Indic-script conversion library (`lipimala`). It preserves identical conversion tables, profile defaults, contextual rules, Vedic handling, canonical reverse conversion, exact round-trip result envelope, and checksummed exact-source metadata format. The direct Gujarati ↔ Devanagari converter is included as well.
+
+Package link on Packagist: [packagist.org/packages/jayeshmepani/lipimala](https://packagist.org/packages/jayeshmepani/lipimala)
+
+```bash
+composer require jayeshmepani/lipimala
+```
 
 ## Runtime
 
