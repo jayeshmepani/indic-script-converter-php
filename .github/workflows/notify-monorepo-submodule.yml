@@ -1,0 +1,46 @@
+# After PHP main (or a release) updates, ask the monorepo to refresh its
+# php/ submodule pin to this repo's latest main.
+#
+# Required secret on THIS repo (indic-script-converter-php):
+#   MONOREPO_SYNC_TOKEN
+#     Personal access token (classic: repo scope) or fine-grained token with:
+#       - Repository access: jayeshmepani/indic-script-converter
+#       - Permissions: Contents Read, Metadata Read, plus ability to create
+#         repository_dispatch (Actions / administration as required by GitHub)
+#
+# Without the secret, the monorepo still syncs on a 6-hour schedule.
+
+name: Notify monorepo to sync submodule
+
+on:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  dispatch:
+    name: repository_dispatch → monorepo
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip if token missing
+        id: check
+        env:
+          TOKEN: ${{ secrets.MONOREPO_SYNC_TOKEN }}
+        run: |
+          if [ -z "${TOKEN}" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::MONOREPO_SYNC_TOKEN is not set on the PHP repo. Monorepo will still sync on schedule (every 6h) or manual workflow_dispatch."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Send repository_dispatch
+        if: steps.check.outputs.configured == 'true'
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.MONOREPO_SYNC_TOKEN }}
+          repository: jayeshmepani/indic-script-converter
+          event-type: php-submodule-sync
+          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}", "repo": "${{ github.repository }}"}'
