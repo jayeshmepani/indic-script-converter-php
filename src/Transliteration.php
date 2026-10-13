@@ -132,3 +132,138 @@ function to_plain_english(
 ): TransliterationResult {
     return toPlainEnglish($text, $options, $inputNormalization, $outputNormalization);
 }
+
+/**
+ * Builds a loss-aware result envelope for a direct Brahmic -> Latin view.
+ */
+function brahmicPlainEnglishResult(
+    string $text,
+    callable $renderer,
+    TransliterationProfile $profile,
+    ?BrahmicPlainEnglishOptions $options = null,
+    UnicodeNormalizationForm $inputNormalization = UnicodeNormalizationForm::NFD,
+    UnicodeNormalizationForm $outputNormalization = UnicodeNormalizationForm::NFC,
+): TransliterationResult {
+    $normalizedInput = normalizeUnicode($text, $inputNormalization);
+    $rendered = normalizeUnicode(
+        $options instanceof BrahmicPlainEnglishOptions ? $renderer($normalizedInput, $options) : $renderer($normalizedInput),
+        $outputNormalization,
+    );
+
+    return new TransliterationResult(
+        original: $text,
+        normalizedInput: $normalizedInput,
+        rendered: $rendered,
+        profile: $profile,
+        inputNormalization: $inputNormalization,
+        outputNormalization: $outputNormalization,
+        renderingIsInjective: false,
+        issues: [new TransliterationIssue(
+            code: $profile === TransliterationProfile::HUNTERIAN
+                ? 'BRAHMIC_HUNTERIAN_VIEW_IS_INTRINSICALLY_LOSSY'
+                : 'BRAHMIC_PLAIN_ENGLISH_VIEW_IS_INTRINSICALLY_LOSSY',
+            message: 'The rendered Latin view is pronunciation-oriented and lossy; the result envelope retains the exact Brahmic source.',
+            severity: TransliterationIssueSeverity::INFO,
+        )],
+    );
+}
+
+function toPlainEnglishFromDevanagariResult(
+    string $text,
+    ?BrahmicPlainEnglishOptions $options = null,
+    UnicodeNormalizationForm $inputNormalization = UnicodeNormalizationForm::NFD,
+    UnicodeNormalizationForm $outputNormalization = UnicodeNormalizationForm::NFC,
+): TransliterationResult {
+    return brahmicPlainEnglishResult(
+        $text,
+        toPlainEnglishFromDevanagari(...),
+        TransliterationProfile::PLAIN_ENGLISH,
+        $options,
+        $inputNormalization,
+        $outputNormalization,
+    );
+}
+
+function toHunterianFromDevanagariResult(
+    string $text,
+    ?BrahmicPlainEnglishOptions $options = null,
+    UnicodeNormalizationForm $inputNormalization = UnicodeNormalizationForm::NFD,
+    UnicodeNormalizationForm $outputNormalization = UnicodeNormalizationForm::NFC,
+): TransliterationResult {
+    return brahmicPlainEnglishResult(
+        $text,
+        toHunterianFromDevanagari(...),
+        TransliterationProfile::HUNTERIAN,
+        $options,
+        $inputNormalization,
+        $outputNormalization,
+    );
+}
+
+function toPlainEnglishFromGujaratiResult(
+    string $text,
+    ?BrahmicPlainEnglishOptions $options = null,
+    UnicodeNormalizationForm $inputNormalization = UnicodeNormalizationForm::NFD,
+    UnicodeNormalizationForm $outputNormalization = UnicodeNormalizationForm::NFC,
+): TransliterationResult {
+    return brahmicPlainEnglishResult(
+        $text,
+        toPlainEnglishFromGujarati(...),
+        TransliterationProfile::PLAIN_ENGLISH,
+        $options,
+        $inputNormalization,
+        $outputNormalization,
+    );
+}
+
+function toHunterianFromGujaratiResult(
+    string $text,
+    ?BrahmicPlainEnglishOptions $options = null,
+    UnicodeNormalizationForm $inputNormalization = UnicodeNormalizationForm::NFD,
+    UnicodeNormalizationForm $outputNormalization = UnicodeNormalizationForm::NFC,
+): TransliterationResult {
+    return brahmicPlainEnglishResult(
+        $text,
+        toHunterianFromGujarati(...),
+        TransliterationProfile::HUNTERIAN,
+        $options,
+        $inputNormalization,
+        $outputNormalization,
+    );
+}
+
+function to_plain_english_from_devanagari_result(
+    string $text,
+    ?BrahmicPlainEnglishOptions $options = null,
+    UnicodeNormalizationForm $inputNormalization = UnicodeNormalizationForm::NFD,
+    UnicodeNormalizationForm $outputNormalization = UnicodeNormalizationForm::NFC,
+): TransliterationResult {
+    return toPlainEnglishFromDevanagariResult($text, $options, $inputNormalization, $outputNormalization);
+}
+
+function to_hunterian_from_devanagari_result(
+    string $text,
+    ?BrahmicPlainEnglishOptions $options = null,
+    UnicodeNormalizationForm $inputNormalization = UnicodeNormalizationForm::NFD,
+    UnicodeNormalizationForm $outputNormalization = UnicodeNormalizationForm::NFC,
+): TransliterationResult {
+    return toHunterianFromDevanagariResult($text, $options, $inputNormalization, $outputNormalization);
+}
+
+function to_plain_english_from_gujarati_result(
+    string $text,
+    ?BrahmicPlainEnglishOptions $options = null,
+    UnicodeNormalizationForm $inputNormalization = UnicodeNormalizationForm::NFD,
+    UnicodeNormalizationForm $outputNormalization = UnicodeNormalizationForm::NFC,
+): TransliterationResult {
+    return toPlainEnglishFromGujaratiResult($text, $options, $inputNormalization, $outputNormalization);
+}
+
+function to_hunterian_from_gujarati_result(
+    string $text,
+    ?BrahmicPlainEnglishOptions $options = null,
+    UnicodeNormalizationForm $inputNormalization = UnicodeNormalizationForm::NFD,
+    UnicodeNormalizationForm $outputNormalization = UnicodeNormalizationForm::NFC,
+): TransliterationResult {
+    return toHunterianFromGujaratiResult($text, $options, $inputNormalization, $outputNormalization);
+}

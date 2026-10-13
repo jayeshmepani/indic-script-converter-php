@@ -172,6 +172,7 @@ final readonly class TransliterationResult implements JsonSerializable
     public function toJsonText(int $flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES): string
     {
         $json = json_encode($this->toJson(), $flags | JSON_THROW_ON_ERROR);
+
         return $json;
     }
 
@@ -221,15 +222,105 @@ function is_unicode_combining_mark(int|string $value): bool
 function isEncodedVedicMark(int|string $value): bool
 {
     $cp = is_int($value) ? $value : Unicode::ord($value);
+
     return $cp === 0x0951
         || $cp === 0x0952
-        || ($cp >= 0x1CD0 && $cp <= 0x1CFF)
-        || ($cp >= 0xA8E0 && $cp <= 0xA8FF);
+        || ($cp >= 0x1CD0 && $cp <= 0x1CFA)
+        || $cp === 0x20F0;
 }
 
 function is_encoded_vedic_mark(int|string $value): bool
 {
     return isEncodedVedicMark($value);
+}
+
+function isVedicToneCantillationMark(int|string $value): bool
+{
+    $cp = is_int($value) ? $value : Unicode::ord($value);
+
+    return ($cp >= 0x1CD0 && $cp <= 0x1CE1)
+        || $cp === 0x1CF4
+        || $cp === 0x1CF7
+        || $cp === 0x1CF8
+        || $cp === 0x1CF9
+        || $cp === 0x20F0;
+}
+
+function isVedicVisargaMark(int|string $value): bool
+{
+    $cp = is_int($value) ? $value : Unicode::ord($value);
+
+    return $cp >= 0x1CE2 && $cp <= 0x1CE8;
+}
+
+function isVedicNasalMark(int|string $value): bool
+{
+    $cp = is_int($value) ? $value : Unicode::ord($value);
+
+    return ($cp >= 0x1CE9 && $cp <= 0x1CF1) || $cp === 0x1CFA;
+}
+
+function isVedicSegmentalSign(int|string $value): bool
+{
+    $cp = is_int($value) ? $value : Unicode::ord($value);
+
+    return in_array($cp, [0x1CF2, 0x1CF3, 0x1CF5, 0x1CF6], true);
+}
+
+function isSamavedaCantillationMark(int|string $value): bool
+{
+    $cp = is_int($value) ? $value : Unicode::ord($value);
+
+    return $cp >= 0xA8E0 && $cp <= 0xA8F1;
+}
+
+function isDevanagariNasalizationSign(int|string $value): bool
+{
+    $cp = is_int($value) ? $value : Unicode::ord($value);
+
+    return $cp >= 0xA8F2 && $cp <= 0xA8F7;
+}
+
+function isDevanagariEditorialMark(int|string $value): bool
+{
+    $cp = is_int($value) ? $value : Unicode::ord($value);
+
+    return ($cp >= 0xA8F8 && $cp <= 0xA8FB) || ($cp >= 0x11B00 && $cp <= 0x11B09);
+}
+
+function isDevanagariExtendedVowel(int|string $value): bool
+{
+    $cp = is_int($value) ? $value : Unicode::ord($value);
+
+    return $cp === 0xA8FE || $cp === 0xA8FF;
+}
+
+function isGujaratiTransliterationMark(int|string $value): bool
+{
+    $cp = is_int($value) ? $value : Unicode::ord($value);
+
+    return $cp >= 0x0AFA && $cp <= 0x0AFF;
+}
+
+function isGujaratiConsonantNukta(int|string $value): bool
+{
+    $cp = is_int($value) ? $value : Unicode::ord($value);
+
+    return $cp >= 0x0AFD && $cp <= 0x0AFF;
+}
+
+function isCommonIndicNumberForm(int|string $value): bool
+{
+    $cp = is_int($value) ? $value : Unicode::ord($value);
+
+    return $cp >= 0xA830 && $cp <= 0xA839;
+}
+
+function isBrahmicFormatControl(int|string $value): bool
+{
+    $cp = is_int($value) ? $value : Unicode::ord($value);
+
+    return in_array($cp, [0x200C, 0x200D, 0x034F], true);
 }
 
 function fnv1a32(string $bytes): int

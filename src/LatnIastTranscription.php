@@ -102,14 +102,8 @@ final readonly class IastPlainEnglishOptions
 
 final class PlainEnglishConverter
 {
-    private const string PH_CHH = "\u{E010}";
-
-    private const string PH_CHH_CAP = "\u{E011}";
-
-    private const string PH_CHH_ALL = "\u{E012}";
-
     /** @var array<string,true> */
-    private const array VOWELS = ['a' => true,'e' => true,'i' => true,'o' => true,'u' => true];
+    private const array VOWELS = ['a' => true, 'e' => true, 'i' => true, 'o' => true, 'u' => true];
 
     private function __construct() {}
 
@@ -132,7 +126,7 @@ final class PlainEnglishConverter
         $i = 0;
         while ($i < count($chars)) {
             $ch = $chars[$i];
-            if (!$options->preserveVedicAccentMarks && isEncodedVedicMark($ch)) {
+            if (!$options->preserveVedicAccentMarks && self::isVedicAccentRune(Unicode::ord($ch))) {
                 ++$i;
                 continue;
             }
@@ -160,6 +154,7 @@ final class PlainEnglishConverter
     private static function isLatinChar(string $ch): bool
     {
         $cp = Unicode::ord($ch);
+
         return ($cp >= 0x41 && $cp <= 0x5A)
             || ($cp >= 0x61 && $cp <= 0x7A)
             || ($cp >= 0x00C0 && $cp <= 0x00FF)
@@ -242,7 +237,7 @@ final class PlainEnglishConverter
 
     private static function applyProfile(string $word, PlainEnglishRomanizationProfile $profile): string
     {
-        $word = str_replace(['x','X',"h\u{032E}","H\u{032E}"], ['kh','Kh','kh','Kh'], $word);
+        $word = str_replace(['c' . "\u{0307}", 'C' . "\u{0307}", 'x', 'X', "h\u{032E}", "H\u{032E}"], ['ts', 'Ts', 'kh', 'Kh', 'kh', 'Kh'], $word);
         if ($profile === PlainEnglishRomanizationProfile::STRICT_IAST) { return $word; }
 
         $word = (string) preg_replace('/ṛh(?=[aāiīuūeêĕoôŏy])/u', 'rh', $word);
@@ -251,7 +246,7 @@ final class PlainEnglishConverter
         $word = (string) preg_replace('/Ṛ(?=[aāiīuūeêĕoôŏy])/u', 'R', $word);
         if ($profile === PlainEnglishRomanizationProfile::HUNTERIAN) {
             $cls = '[kKgGcCjJtTdDpPbBsSśŚṣṢhH]';
-            foreach (['ḥ','Ḥ',"h\u{0323}","H\u{0323}"] as $prefix) {
+            foreach (['ḥ', 'Ḥ', "h\u{0323}", "H\u{0323}"] as $prefix) {
                 $pattern = '/' . preg_quote($prefix, '/') . '(' . $cls . ')/u';
                 $word = (string) preg_replace_callback($pattern, static fn(array $m): string => $m[1], $word);
             }
@@ -311,7 +306,7 @@ final class PlainEnglishConverter
 
     private static function isIastVowelChar(string $ch): bool
     {
-        return in_array(Unicode::lower($ch), ['a','ā','i','ī','u','ū','e','o','ṛ','ṝ','ḷ','ḹ','æ','œ'], true);
+        return in_array(Unicode::lower($ch), ['a', 'ā', 'i', 'ī', 'ĭ', 'u', 'ū', 'e', 'ē', 'o', 'ō', 'ṛ', 'ṝ', 'ḷ', 'ḹ', 'æ', 'œ'], true);
     }
 
     private static function isShortASchwa(string $text): bool
@@ -322,23 +317,26 @@ final class PlainEnglishConverter
     private static function countConsonants(string $cluster): int
     {
         $s = Unicode::lower($cluster);
-        $s = str_replace(['kh','gh','ch','jh','th','dh','ph','bh','sh','zh'], ['K','G','C','J','T','D','P','B','S','Z'], $s);
+        $s = str_replace(['kh', 'gh', 'ch', 'jh', 'th', 'dh', 'ph', 'bh', 'sh', 'zh'], ['K', 'G', 'C', 'J', 'T', 'D', 'P', 'B', 'S', 'Z'], $s);
+
         return Unicode::length($s);
     }
 
     private static function applyJna(string $word, JnaPolicy $policy): string
     {
         $reps = match ($policy) {
-            JnaPolicy::GYA => ['jñ' => 'gy','Jñ' => 'Gy','JÑ' => 'GY','jÑ' => 'gy',"jn\u{0303}" => 'gy',"Jn\u{0303}" => 'Gy',"JN\u{0303}" => 'GY'],
-            JnaPolicy::JNYA => ['jñ' => 'jny','Jñ' => 'Jny','JÑ' => 'JNY','jÑ' => 'jny',"jn\u{0303}" => 'jny',"Jn\u{0303}" => 'Jny',"JN\u{0303}" => 'JNY'],
-            JnaPolicy::JNA => ['jñ' => 'jn','Jñ' => 'Jn','JÑ' => 'JN','jÑ' => 'jn',"jn\u{0303}" => 'jn',"Jn\u{0303}" => 'Jn',"JN\u{0303}" => 'JN'],
+            JnaPolicy::GYA => ['jñ' => 'gy', 'Jñ' => 'Gy', 'JÑ' => 'GY', 'jÑ' => 'gy', "jn\u{0303}" => 'gy', "Jn\u{0303}" => 'Gy', "JN\u{0303}" => 'GY'],
+            JnaPolicy::JNYA => ['jñ' => 'jny', 'Jñ' => 'Jny', 'JÑ' => 'JNY', 'jÑ' => 'jny', "jn\u{0303}" => 'jny', "Jn\u{0303}" => 'Jny', "JN\u{0303}" => 'JNY'],
+            JnaPolicy::JNA => ['jñ' => 'jn', 'Jñ' => 'Jn', 'JÑ' => 'JN', 'jÑ' => 'jn', "jn\u{0303}" => 'jn', "Jn\u{0303}" => 'Jn', "JN\u{0303}" => 'JN'],
         };
+
         return strtr($word, $reps);
     }
 
     private static function resolveAnusvara(string $word): string
     {
         $pattern = '/([mM](?:\x{0307}|\x{0323}|\x{0310})|[ṃṁṂṀ])(.?)/us';
+
         return (string) preg_replace_callback($pattern, static function (array $m): string {
             $marker = $m[1];
             $next = ($m[2] ?? '') !== '' ? $m[2] : null;
@@ -347,6 +345,7 @@ final class PlainEnglishConverter
             // testing whether this exact match starts the string in the callback.
             // We attach PREG_OFFSET_CAPTURE through a second implementation below.
             $nasal = self::anusvaraNasal($next);
+
             return ($isUpper ? Unicode::upper($nasal) : Unicode::lower($nasal)) . ($next ?? '');
         }, self::resolveInitialCandrabindu($word));
     }
@@ -356,6 +355,7 @@ final class PlainEnglishConverter
         $chars = Unicode::split($word);
         if (count($chars) >= 2 && ($chars[0] === 'm' || $chars[0] === 'M') && $chars[1] === "\u{0310}") {
             array_splice($chars, 1, 1);
+
             return implode('', $chars);
         }
 
@@ -367,20 +367,42 @@ final class PlainEnglishConverter
         if ($next === null) { return 'm'; }
 
         $lower = Unicode::lower($next);
-        if (in_array($lower, ['k','g','c','j','ṭ','ḍ','t','d','n','ṇ','ṅ','ñ'], true)) { return 'n'; }
+        if (in_array($lower, ['k', 'g', 'c', 'j', 'ṭ', 'ḍ', 't', 'd', 'n', 'ṇ', 'ṅ', 'ñ'], true)) { return 'n'; }
 
-        if (in_array($lower, ['p','b','m'], true)) { return 'm'; }
+        if (in_array($lower, ['p', 'b', 'm'], true)) { return 'm'; }
 
-        if (in_array($lower, ['ś','ṣ','s','h','y','v'], true)) { return 'n'; }
+        if (in_array($lower, ['ś', 'ṣ', 's', 'h', 'y', 'v'], true)) { return 'n'; }
 
         return 'm';
     }
 
     private static function expandC(string $word): string
     {
-        $w = str_replace(['ch','Ch','CH'], [self::PH_CHH,self::PH_CHH_CAP,self::PH_CHH_ALL], $word);
-        $w = (string) preg_replace_callback('/[cC]/', static fn(array $m): string => $m[0] === 'C' ? 'Ch' : 'ch', $w);
-        return str_replace([self::PH_CHH,self::PH_CHH_CAP,self::PH_CHH_ALL], ['chh','Chh','CHH'], $w);
+        $chars = Unicode::split($word);
+        $out = '';
+        for ($i = 0, $count = count($chars); $i < $count; ++$i) {
+            $current = $chars[$i];
+            if ($current !== 'c' && $current !== 'C') {
+                $out .= $current;
+                continue;
+            }
+
+            $next = $chars[$i + 1] ?? null;
+            if ($current === 'c' && $next === 'h') {
+                $out .= 'chh';
+                ++$i;
+            } elseif ($current === 'C' && $next === 'h') {
+                $out .= 'Chh';
+                ++$i;
+            } elseif ($current === 'C' && $next === 'H') {
+                $out .= 'CHH';
+                ++$i;
+            } else {
+                $out .= $current === 'C' ? 'Ch' : 'ch';
+            }
+        }
+
+        return $out;
     }
 
     private static function isEnglishVowel(?string $ch): bool
@@ -390,7 +412,7 @@ final class PlainEnglishConverter
 
     private static function isVedicAccentRune(int $cp): bool
     {
-        return isEncodedVedicMark($cp) || in_array($cp, [0x0301,0x0300,0x030D,0x030E,0x0302,0x0329,0x0331,0x0320], true);
+        return isEncodedVedicMark($cp) || in_array($cp, [0x0301, 0x0300, 0x030D, 0x030E, 0x0302, 0x0329, 0x0331, 0x0320], true);
     }
 
     private static function foldLetters(string $word, GlottalStopPolicy $glottal, NyaPolicy $nya, bool $preserveVedic): string
@@ -424,7 +446,8 @@ final class PlainEnglishConverter
 
         $chars = Unicode::split($folded);
         $first = Unicode::lower($chars[0]);
-        return isset(self::VOWELS[$first]) || in_array(Unicode::lower($folded), ['ri','li'], true);
+
+        return isset(self::VOWELS[$first]) || in_array(Unicode::lower($folded), ['ri', 'li'], true);
     }
 
     /** @param list<int> $marks */
@@ -467,6 +490,7 @@ final class PlainEnglishConverter
         }
 
         $out ??= self::foldPrecomposed($base, $glottal, $nya, $nextBase, $prev);
+
         return self::matchCase($isUpper, $out);
     }
 
@@ -478,7 +502,8 @@ final class PlainEnglishConverter
         if ($next === '' || isset(self::VOWELS[$next])) { return false; }
 
         $chars = Unicode::split($next);
-        return !in_array($chars[0], ['m','n'], true);
+
+        return !in_array($chars[0], ['m', 'n'], true);
     }
 
     /** @param list<int> $marks */
@@ -495,6 +520,7 @@ final class PlainEnglishConverter
         if ($folded === '') { return false; }
 
         $chars = Unicode::split($folded);
+
         return isset(self::VOWELS[$chars[0]]);
     }
 
@@ -509,6 +535,7 @@ final class PlainEnglishConverter
 
         $chars = Unicode::split($lower);
         $chars[0] = Unicode::upper($chars[0]);
+
         return implode('', $chars);
     }
 
@@ -516,28 +543,28 @@ final class PlainEnglishConverter
     {
         if ($ch === 'ā') { return 'a'; } if ($ch === 'Ā') { return 'A'; }
 
-        if ($ch === 'ī') { return 'i'; } if ($ch === 'Ī') { return 'I'; }
+        if ($ch === 'ī' || $ch === 'ĭ') { return 'i'; } if ($ch === 'Ī' || $ch === 'Ĭ') { return 'I'; }
 
         if ($ch === 'ū') { return 'u'; } if ($ch === 'Ū') { return 'U'; }
 
         $groups = [
-            'a' => 'ăàáâãäå','A' => 'ĂÀÁÂÃÄÅ','i' => 'ìíîï','I' => 'ÌÍÎÏ',
-            'e' => 'ĕěēèéêë','E' => 'ĔĚĒÈÉÊË','o' => 'ŏòóôõöōø','O' => 'ŌŎÒÓÔÕÖØ',
-            'u' => 'ùúûü','U' => 'ÙÚÛÜ',
+            'a' => 'ăàáâãäå', 'A' => 'ĂÀÁÂÃÄÅ', 'i' => 'ìíîï', 'I' => 'ÌÍÎÏ',
+            'e' => 'ĕěēèéêë', 'E' => 'ĔĚĒÈÉÊË', 'o' => 'ŏòóôõöōø', 'O' => 'ŌŎÒÓÔÕÖØ',
+            'u' => 'ùúûü', 'U' => 'ÙÚÛÜ',
         ];
         foreach ($groups as $out => $chars) { if (in_array($ch, Unicode::split($chars), true)) { return $out; } }
 
-        if (in_array($ch, ['Æ','Ǣ'], true)) { return 'Ae'; }
+        if (in_array($ch, ['Æ', 'Ǣ'], true)) { return 'Ae'; }
 
         if ($ch === 'Œ') { return 'Oe'; }
 
-        if (in_array($ch, ['æ','ǣ'], true)) { return 'ae'; }
+        if (in_array($ch, ['æ', 'ǣ'], true)) { return 'ae'; }
 
         if ($ch === 'œ') { return 'oe'; }
 
-        if (in_array($ch, ['ṛ','ṝ'], true)) { return self::isEnglishVowel($prev) ? 'r' : 'ri'; }
+        if (in_array($ch, ['ṛ', 'ṝ'], true)) { return self::isEnglishVowel($prev) ? 'r' : 'ri'; }
 
-        if (in_array($ch, ['Ṛ','Ṝ'], true)) { return self::isEnglishVowel($prev) ? 'R' : 'Ri'; }
+        if (in_array($ch, ['Ṛ', 'Ṝ'], true)) { return self::isEnglishVowel($prev) ? 'R' : 'Ri'; }
 
         if ($ch === 'ḷ') { return self::isVowelBase($nextBase, $prev) ? 'l' : 'li'; }
 
@@ -552,13 +579,14 @@ final class PlainEnglishConverter
         if ($ch === 'ʔ') { return $glottal === GlottalStopPolicy::REMOVE ? '' : "'"; }
 
         static $table = [
-            'ṅ' => 'n','Ṅ' => 'N','ŋ' => 'n','Ŋ' => 'N','ƞ' => 'n','Ƞ' => 'N','ṇ' => 'n','Ṇ' => 'N','ṉ' => 'n','Ṉ' => 'N','ṙ' => 'r','Ṙ' => 'R',
-            'ç' => 'c','Ç' => 'C','ł' => 'l','Ł' => 'L','ß' => 'ss','þ' => 'th','Þ' => 'Th','ð' => 'd','Ð' => 'D',
-            'ṭ' => 't','Ṭ' => 'T','ṯ' => 't','Ṯ' => 'T','ḳ' => 'k','ḵ' => 'k','Ḳ' => 'K','Ḵ' => 'K','ḍ' => 'd','Ḍ' => 'D','ḏ' => 'd','Ḏ' => 'D',
-            'ś' => 'sh','Ś' => 'Sh','ṣ' => 'sh','Ṣ' => 'Sh','ṡ' => 's','Ṡ' => 'S','ž' => 'zh','Ž' => 'Zh','ź' => 'z','ż' => 'z','Ź' => 'Z','Ż' => 'Z','ẓ' => 'z','Ẓ' => 'Z',
-            'ẏ' => 'y','Ẏ' => 'Y','ḻ' => 'l','Ḻ' => 'L','ṟ' => 'r','Ṟ' => 'R','ġ' => 'g','ǧ' => 'g','Ġ' => 'G','Ǧ' => 'G','ɓ' => 'b','Ɓ' => 'B','ɗ' => 'd','Ɗ' => 'D',
-            'ḥ' => 'h','Ḥ' => 'H','ħ' => 'h','ḫ' => 'h','ẖ' => 'h','Ħ' => 'H','Ḫ' => 'H','H̱' => 'H','ṃ' => 'm','Ṃ' => 'M','ṁ' => 'm','Ṁ' => 'M',
+            'ṅ' => 'n', 'Ṅ' => 'N', 'ŋ' => 'n', 'Ŋ' => 'N', 'ƞ' => 'n', 'Ƞ' => 'N', 'ṇ' => 'n', 'Ṇ' => 'N', 'ṉ' => 'n', 'Ṉ' => 'N', 'ṙ' => 'r', 'Ṙ' => 'R',
+            'ç' => 'c', 'ċ' => 'ts', 'Ċ' => 'Ts', 'Ç' => 'C', 'ł' => 'l', 'Ł' => 'L', 'ß' => 'ss', 'þ' => 'th', 'Þ' => 'Th', 'ð' => 'd', 'Ð' => 'D',
+            'ṭ' => 't', 'Ṭ' => 'T', 'ṯ' => 't', 'Ṯ' => 'T', 'ḳ' => 'k', 'ḵ' => 'k', 'Ḳ' => 'K', 'Ḵ' => 'K', 'ḍ' => 'd', 'Ḍ' => 'D', 'ḏ' => 'd', 'Ḏ' => 'D',
+            'ś' => 'sh', 'Ś' => 'Sh', 'ṣ' => 'sh', 'Ṣ' => 'Sh', 'ṡ' => 's', 'Ṡ' => 'S', 'ž' => 'zh', 'Ž' => 'Zh', 'ź' => 'z', 'ż' => 'z', 'Ź' => 'Z', 'Ż' => 'Z', 'ẓ' => 'z', 'Ẓ' => 'Z',
+            'ẏ' => 'y', 'Ẏ' => 'Y', 'ḻ' => 'l', 'Ḻ' => 'L', 'ṟ' => 'r', 'Ṟ' => 'R', 'ġ' => 'g', 'ǧ' => 'g', 'Ġ' => 'G', 'Ǧ' => 'G', 'ɠ' => 'g', 'ʄ' => 'j', 'ɓ' => 'b', 'Ɓ' => 'B', 'ɗ' => 'd', 'Ɗ' => 'D',
+            'ḥ' => 'h', 'Ḥ' => 'H', 'ħ' => 'h', 'ḫ' => 'h', 'ẖ' => 'h', 'Ħ' => 'H', 'Ḫ' => 'H', 'H̱' => 'H', 'ṃ' => 'm', 'Ṃ' => 'M', 'ṁ' => 'm', 'Ṁ' => 'M',
         ];
+
         return $table[$ch] ?? $ch;
     }
 
@@ -578,13 +606,14 @@ final class PlainEnglishConverter
         $keepSet = $options->keepFinalASet();
         if (isset($keepSet[$lower])) { return $word; }
 
-        foreach (['moksha','vriksha','ashvattha','simha','sinha'] as $ending) { if (str_ends_with($lower, $ending)) { return $word; } }
+        foreach (['moksha', 'vriksha', 'ashvattha', 'simha', 'sinha'] as $ending) { if (str_ends_with($lower, $ending)) { return $word; } }
 
         if (str_ends_with($lower, 'ya')) { return $word; }
 
         if (str_ends_with($lower, 'ha') && count($lowerChars) >= 3 && isset(self::VOWELS[$lowerChars[count($lowerChars) - 3]])) { return $word; }
 
         $without = implode('', array_slice($chars, 0, -1));
+
         return self::leavesAwkwardFinalCluster($without) ? $word : $without;
     }
 
@@ -603,7 +632,7 @@ final class PlainEnglishConverter
 
         if ($len >= 3) { return true; }
 
-        $bad = array_fill_keys(['tr','dr','gy','kr','gr','jr','rm','hm','ry','ly','ny','my','sv','dv','tv','pn','bn','kn','gn','km','gm','pm','bm','tm','dm','dD','hX'], true);
+        $bad = array_fill_keys(['tr', 'dr', 'gy', 'kr', 'gr', 'jr', 'rm', 'hm', 'ry', 'ly', 'ny', 'my', 'sv', 'dv', 'tv', 'pn', 'bn', 'kn', 'gn', 'km', 'gm', 'pm', 'bm', 'tm', 'dm', 'dD', 'hX'], true);
         if (isset($bad[$suffix])) { return true; }
 
         return preg_match('/[CKSDTGHPBX][mnlrvy]$/', $suffix) === 1;
@@ -611,7 +640,7 @@ final class PlainEnglishConverter
 
     private static function normalizeFinalCluster(string $word): string
     {
-        return str_replace(['ksh','chh','ch','sh','gh','dh','th','ph','bh','kh'], ['K','H','C','S','G','D','T','P','B','X'], $word);
+        return str_replace(['ksh', 'chh', 'ch', 'sh', 'gh', 'dh', 'th', 'ph', 'bh', 'kh'], ['K', 'H', 'C', 'S', 'G', 'D', 'T', 'P', 'B', 'X'], $word);
     }
 }
 

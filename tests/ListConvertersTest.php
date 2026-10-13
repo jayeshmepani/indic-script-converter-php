@@ -72,13 +72,13 @@ final class ListConvertersTest extends TestCase
 
         $devaDigits = toDevanagariFromIastList(
             $items,
-            new IastToDevanagariOptions(digitPolicy: DigitPolicy::ConvertToScript)
+            new IastToDevanagariOptions(digitPolicy: DigitPolicy::ConvertToScript),
         );
         self::assertSame(['राम १२३', 'ज्ञान'], $devaDigits);
 
         $plainKeepFinalA = toPlainEnglishFromIastList(
             $items,
-            new IastPlainEnglishOptions(finalAPolicy: PlainEnglishFinalAPolicy::Keep)
+            new IastPlainEnglishOptions(finalAPolicy: PlainEnglishFinalAPolicy::Keep),
         );
         self::assertSame(['Rama 123', 'gyana'], $plainKeepFinalA);
     }

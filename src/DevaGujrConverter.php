@@ -235,6 +235,7 @@ function buildScriptSequenceRules(array $mappings): array
         $rules,
         static fn(array $a, array $b): int => count($b['source']) <=> count($a['source']),
     );
+
     return $rules;
 }
 
@@ -365,6 +366,7 @@ function toCanonicalDevanagariFromGujarati(
     $options ??= new IndicScriptConversionOptions;
     static $rules = null;
     $rules ??= buildScriptSequenceRules(gujrToDevaSequenceMap());
+
     return convertCanonicalIndicScript(
         $input,
         $options,
@@ -425,6 +427,7 @@ function toCanonicalGujaratiFromDevanagari(
     $options ??= new IndicScriptConversionOptions;
     static $rules = null;
     $rules ??= buildScriptSequenceRules(devaToGujrSequenceMap());
+
     return convertCanonicalIndicScript(
         $input,
         $options,

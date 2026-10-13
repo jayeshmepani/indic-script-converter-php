@@ -176,6 +176,7 @@ final class ForwardConverter
     private function sortKeys(array $keys): array
     {
         usort($keys, static fn(string $a, string $b): int => Unicode::length($b) <=> Unicode::length($a));
+
         return $keys;
     }
 
@@ -191,6 +192,7 @@ final class ForwardConverter
     private function isLatinChar(string $ch): bool
     {
         $cp = Unicode::ord($ch);
+
         return ($cp >= 0x41 && $cp <= 0x5A)
             || ($cp >= 0x61 && $cp <= 0x7A)
             || ($cp >= 0x00C0 && $cp <= 0x00FF)
@@ -204,6 +206,7 @@ final class ForwardConverter
     private function isAlphabeticLatinChar(string $ch): bool
     {
         $cp = Unicode::ord($ch);
+
         return ($cp >= 0x41 && $cp <= 0x5A)
             || ($cp >= 0x61 && $cp <= 0x7A)
             || ($cp >= 0x00C0 && $cp <= 0x00FF)
@@ -495,6 +498,7 @@ final class ForwardConverter
 
         if ($idx < count($chars)) {
             $nextSign = $this->matchKey($chars, $idx, $this->signKeys);
+
             return in_array($nextSign, ['ḥ', 'ṃ', 'm̐', "\u{0310}", '̐'], true);
         }
 
@@ -827,6 +831,8 @@ final class ForwardConverter
             $take('ṣ', [0x0323]);
         } elseif ($lower === 's' && $hasAcute) {
             $take('ś', [0x0301]);
+        } elseif ($lower === 'c' && $hasDotAbove) {
+            $take('ċ', [0x0307]);
         } elseif ($lower === 's' && $hasDotAbove) {
             $take('ṡ', [0x0307]);
         } elseif ($lower === 's' && $hasLineBelow) {
@@ -885,7 +891,7 @@ final class ForwardConverter
             $token = ['a' => 'ā', 'i' => 'ī', 'u' => 'ū', 'e' => 'ē', 'o' => 'ō'][$lower] ?? null;
             if ($token !== null) { $take($token, [0x0304]); }
         } elseif (in_array(0x0306, $marks, true)) {
-            $token = ['a' => 'ă', 'e' => 'ĕ', 'o' => 'ŏ'][$lower] ?? null;
+            $token = ['a' => 'ă', 'e' => 'ĕ', 'i' => 'ĭ', 'o' => 'ŏ'][$lower] ?? null;
             if ($token !== null) { $take($token, [0x0306]); }
         } elseif (in_array(0x0302, $marks, true)) {
             $token = ['e' => 'ê', 'o' => 'ô'][$lower] ?? null;
@@ -914,6 +920,7 @@ final class ForwardConverter
             'þ' => 'th', 'Þ' => 'Th', 'ð' => 'd', 'Ð' => 'D',
             'Æ' => 'ae', 'æ' => 'ae', 'Œ' => 'oe', 'œ' => 'oe', 'ź' => 'z', 'Ź' => 'Z',
         ];
+
         return $mapping[$ch] ?? $ch;
     }
 
@@ -984,6 +991,7 @@ final class ForwardConverter
     private function protectOmWords(string $text): string
     {
         $pattern = '/(?<![A-Za-z\x{00C0}-\x{024F}\x{1E00}-\x{1EFF}\x{0300}-\x{036F}])(oṃ|oṁ|oṁ|aum)(?![A-Za-z\x{00C0}-\x{024F}\x{1E00}-\x{1EFF}\x{0300}-\x{036F}])/iu';
+
         return (string) preg_replace($pattern, "\u{E100}", $text);
     }
 }

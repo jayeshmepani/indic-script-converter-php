@@ -159,6 +159,7 @@ final class Unicode
     {
         $points = self::codePoints($text);
         $slice = $length === null ? array_slice($points, $start) : array_slice($points, $start, $length);
+
         return self::fromCodePoints($slice);
     }
 
@@ -220,6 +221,7 @@ final class Unicode
         }
 
         self::canonicalOrder($decomposed);
+
         return self::fromCodePoints($decomposed);
     }
 
@@ -331,6 +333,7 @@ final class Unicode
         $mapping = UnicodeData::CANONICAL_DECOMPOSITION[$cp] ?? null;
         if ($mapping === null) {
             $out[] = $cp;
+
             return;
         }
 

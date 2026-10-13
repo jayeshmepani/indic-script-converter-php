@@ -15,6 +15,7 @@ namespace Lipimala;
 function toDevanagariFromIastList(array $items, ?IastToDevanagariOptions $options = null): array
 {
     $options ??= new IastToDevanagariOptions;
+
     return array_map(static fn(string $item): string => toDevanagariFromIast($item, $options), $items);
 }
 
@@ -29,6 +30,7 @@ function toDevanagariFromIastList(array $items, ?IastToDevanagariOptions $option
 function toGujaratiFromIastList(array $items, ?IastToGujaratiOptions $options = null): array
 {
     $options ??= new IastToGujaratiOptions;
+
     return array_map(static fn(string $item): string => toGujaratiFromIast($item, $options), $items);
 }
 
@@ -43,6 +45,7 @@ function toGujaratiFromIastList(array $items, ?IastToGujaratiOptions $options = 
 function toPlainEnglishFromIastList(array $items, ?IastPlainEnglishOptions $options = null): array
 {
     $options ??= new IastPlainEnglishOptions;
+
     return array_map(static fn(string $item): string => toPlainEnglishFromIast($item, $options), $items);
 }
 
@@ -54,9 +57,30 @@ function toPlainEnglishFromIastList(array $items, ?IastPlainEnglishOptions $opti
  *
  * @return array<string> converted IAST strings
  */
+function toPlainEnglishFromDevanagariList(array $items, ?BrahmicPlainEnglishOptions $options = null): array
+{
+    return array_map(static fn(string $item): string => toPlainEnglishFromDevanagari($item, $options), $items);
+}
+
+function toHunterianFromDevanagariList(array $items, ?BrahmicPlainEnglishOptions $options = null): array
+{
+    return array_map(static fn(string $item): string => toHunterianFromDevanagari($item, $options), $items);
+}
+
+function toPlainEnglishFromGujaratiList(array $items, ?BrahmicPlainEnglishOptions $options = null): array
+{
+    return array_map(static fn(string $item): string => toPlainEnglishFromGujarati($item, $options), $items);
+}
+
+function toHunterianFromGujaratiList(array $items, ?BrahmicPlainEnglishOptions $options = null): array
+{
+    return array_map(static fn(string $item): string => toHunterianFromGujarati($item, $options), $items);
+}
+
 function toIastFromDevanagariList(array $items, ?ScriptToIastOptions $options = null): array
 {
     $options ??= new ScriptToIastOptions;
+
     return array_map(static fn(string $item): string => toIastFromDevanagari($item, $options), $items);
 }
 
@@ -71,6 +95,7 @@ function toIastFromDevanagariList(array $items, ?ScriptToIastOptions $options = 
 function toIastFromGujaratiList(array $items, ?ScriptToIastOptions $options = null): array
 {
     $options ??= new ScriptToIastOptions;
+
     return array_map(static fn(string $item): string => toIastFromGujarati($item, $options), $items);
 }
 
@@ -85,6 +110,7 @@ function toIastFromGujaratiList(array $items, ?ScriptToIastOptions $options = nu
 function toCanonicalIastFromDevanagariList(array $items, ?ScriptToIastOptions $options = null): array
 {
     $options ??= new ScriptToIastOptions;
+
     return array_map(static fn(string $item): string => toCanonicalIastFromDevanagari($item, $options), $items);
 }
 
@@ -99,6 +125,7 @@ function toCanonicalIastFromDevanagariList(array $items, ?ScriptToIastOptions $o
 function toCanonicalIastFromGujaratiList(array $items, ?ScriptToIastOptions $options = null): array
 {
     $options ??= new ScriptToIastOptions;
+
     return array_map(static fn(string $item): string => toCanonicalIastFromGujarati($item, $options), $items);
 }
 
@@ -113,6 +140,7 @@ function toCanonicalIastFromGujaratiList(array $items, ?ScriptToIastOptions $opt
 function toCanonicalGujaratiFromDevanagariList(array $items, ?IndicScriptConversionOptions $options = null): array
 {
     $options ??= new IndicScriptConversionOptions;
+
     return array_map(static fn(string $item): string => toCanonicalGujaratiFromDevanagari($item, $options), $items);
 }
 
@@ -151,6 +179,7 @@ function toExactIastFromGujaratiList(array $items): array
 function toGujaratiFromDevanagariList(array $items, ?IndicScriptConversionOptions $options = null): array
 {
     $options ??= new IndicScriptConversionOptions;
+
     return array_map(static fn(string $item): string => toGujaratiFromDevanagari($item, $options), $items);
 }
 
@@ -165,6 +194,7 @@ function toGujaratiFromDevanagariList(array $items, ?IndicScriptConversionOption
 function toDevanagariFromGujaratiList(array $items, ?IndicScriptConversionOptions $options = null): array
 {
     $options ??= new IndicScriptConversionOptions;
+
     return array_map(static fn(string $item): string => toDevanagariFromGujarati($item, $options), $items);
 }
 
@@ -179,6 +209,7 @@ function toDevanagariFromGujaratiList(array $items, ?IndicScriptConversionOption
 function toCanonicalDevanagariFromGujaratiList(array $items, ?IndicScriptConversionOptions $options = null): array
 {
     $options ??= new IndicScriptConversionOptions;
+
     return array_map(static fn(string $item): string => toCanonicalDevanagariFromGujarati($item, $options), $items);
 }
 
@@ -217,6 +248,7 @@ function toExactGujaratiFromDevanagariList(array $items): array
 function toDevanagariList(array $items, ?IastToDevanagariOptions $options = null): array
 {
     $options ??= new IastToDevanagariOptions;
+
     return array_map(static fn(string $item): TransliterationResult => toDevanagari($item, $options), $items);
 }
 
@@ -231,6 +263,7 @@ function toDevanagariList(array $items, ?IastToDevanagariOptions $options = null
 function toGujaratiList(array $items, ?IastToGujaratiOptions $options = null): array
 {
     $options ??= new IastToGujaratiOptions;
+
     return array_map(static fn(string $item): TransliterationResult => toGujarati($item, $options), $items);
 }
 
@@ -245,5 +278,6 @@ function toGujaratiList(array $items, ?IastToGujaratiOptions $options = null): a
 function toPlainEnglishList(array $items, ?IastPlainEnglishOptions $options = null): array
 {
     $options ??= new IastPlainEnglishOptions;
+
     return array_map(static fn(string $item): TransliterationResult => toPlainEnglish($item, $options), $items);
 }

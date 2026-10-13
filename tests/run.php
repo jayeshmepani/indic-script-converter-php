@@ -7,6 +7,11 @@ require_once __DIR__ . '/../tools/latn_iast_transliteration_verification/example
 require_once __DIR__ . '/../tools/latn_iast_transliteration_verification/example_deva.php';
 require_once __DIR__ . '/../tools/latn_iast_transliteration_verification/example_gujr.php';
 
+use Lipimala\AynPolicy;
+use Lipimala\BrahmicLanguage;
+use Lipimala\BrahmicPlainEnglishOptions;
+use Lipimala\BrahmicSchwaDeletionPolicy;
+use Lipimala\BrahmicVowelLengthPolicy;
 use Lipimala\DevanagariRomanizationProfile;
 use Lipimala\FinalAPolicy;
 use Lipimala\GlottalStopPolicy;
@@ -31,6 +36,8 @@ use Lipimala\JnaPolicy;
 use Lipimala\NyaPolicy;
 use Lipimala\PlainEnglishRomanizationProfile;
 use Lipimala\ScriptToIastOptions;
+use Lipimala\TerminalAnusvaraPolicy;
+use Lipimala\TransliterationProfile;
 use Lipimala\TransliterationResult;
 use Lipimala\Unicode;
 use Lipimala\UnicodeData;
@@ -52,7 +59,15 @@ use function Lipimala\toExactIastFromDevanagari;
 use function Lipimala\toExactIastFromGujarati;
 use function Lipimala\toGujaratiFromDevanagari;
 use function Lipimala\toGujaratiFromIast;
+use function Lipimala\toHunterianFromDevanagari;
+use function Lipimala\toHunterianFromGujarati;
+use function Lipimala\toHunterianFromGujaratiList;
+use function Lipimala\toHunterianFromGujaratiResult;
 use function Lipimala\toPlainEnglish;
+use function Lipimala\toPlainEnglishFromDevanagari;
+use function Lipimala\toPlainEnglishFromGujarati;
+use function Lipimala\toPlainEnglishFromGujaratiList;
+use function Lipimala\toPlainEnglishFromGujaratiResult;
 use function Lipimala\toPlainEnglishFromIast;
 
 use const Lipimala\Verification\DEVANAGARI_SMOKE_SAMPLES;
@@ -87,6 +102,7 @@ function throws(callable $callback, string $message = ''): void
 {
     global $assertions;
     ++$assertions;
+
     try {
         $callback();
     } catch (Throwable) {
@@ -100,6 +116,7 @@ function test(string $name, callable $callback): void
 {
     global $tests;
     ++$tests;
+
     try {
         $callback();
         echo '✓ ', $name, PHP_EOL;
@@ -137,6 +154,243 @@ test('default profiles are extendedIndic', static function (): void {
     same((new IastToDevanagariOptions)->profile, DevanagariRomanizationProfile::EXTENDED_INDIC);
     same((new IastToGujaratiOptions)->profile, GujaratiRomanizationProfile::EXTENDED_INDIC);
     same((new IastPlainEnglishOptions)->profile, PlainEnglishRomanizationProfile::EXTENDED_INDIC);
+});
+
+test('Gujarati direct Plain-English is source-aware', static function (): void {
+    $cases = [
+        'આજ' => 'aaj',
+        'મારે' => 'maare',
+        'ઓરડે' => 'orade',
+        'નટવર' => 'natvar',
+        'સમાચાર' => 'samaachaar',
+        'ધર્મકુમાર' => 'dharmakumaar',
+        'ગુલાબના' => 'gulaabnaa',
+        'હીરની' => 'heernee',
+        'અમૂલ્ય' => 'amoolya',
+        'ધન્ય' => 'dhanya',
+        'રૂમાલ' => 'roomaal',
+        'શું' => 'shun',
+        'ક્યાં' => 'kyaan',
+    ];
+    foreach ($cases as $source => $expected) {
+        same(toPlainEnglishFromGujarati($source), $expected, $source);
+    }
+});
+
+test('Gujarati direct Hunterian applies Gujarati schwa rules without Hindi v-to-w leakage', static function (): void {
+    $cases = [
+        'નટવર' => 'natvar',
+        'સમાચાર' => 'samachar',
+        'ધર્મકુમાર' => 'dharmakumar',
+        'સર્વે' => 'sarve',
+        'શોભતા' => 'shobhta',
+        'રેશમી' => 'reshmi',
+        'સૂંથણલી' => 'sunthanli',
+    ];
+    foreach ($cases as $source => $expected) {
+        same(toHunterianFromGujarati($source), $expected, $source);
+    }
+
+    same(toHunterianFromGujarati('સર્વે swan twin'), 'sarve swan twin');
+    same(toHunterianFromGujarati('દુઃખ'), 'dukh');
+});
+
+test('direct Brahmic transcription preserves pre-existing Latin spans exactly', static function (): void {
+    $latin = 'cat chocolate camera JavaScript café Kṛṣṇa Kr̥ṣṇa John’s ‘quote’';
+    same(toPlainEnglishFromGujarati("ગુજરાત {$latin}"), "gujaraat {$latin}");
+    same(toHunterianFromGujarati("ગુજરાત {$latin}"), "gujarat {$latin}");
+    same(toPlainEnglishFromDevanagari("भारत {$latin}"), "bhaarat {$latin}");
+    same(toHunterianFromDevanagari("भारत {$latin}"), "bharat {$latin}");
+});
+
+test('Devanagari direct transcription applies Hindi schwa deletion with Sanskrit override', static function (): void {
+    same(toPlainEnglishFromDevanagari('कानपुर'), 'kaanpur');
+    same(toPlainEnglishFromDevanagari('सरकार'), 'sarkaar');
+    same(toPlainEnglishFromDevanagari('अहमद'), 'ahmad');
+    same(toPlainEnglishFromDevanagari('धर्म'), 'dharm');
+    same(toPlainEnglishFromGujarati('ધર્મ'), 'dharm');
+    same(toHunterianFromDevanagari('कानपुर'), 'kanpur');
+    same(toHunterianFromDevanagari('सरकार'), 'sarkar');
+    same(
+        toPlainEnglishFromDevanagari('कानपुर', new BrahmicPlainEnglishOptions(language: BrahmicLanguage::SANSKRIT)),
+        'kaanapura',
+    );
+    same(
+        toPlainEnglishFromDevanagari('धर्म', new BrahmicPlainEnglishOptions(language: BrahmicLanguage::SANSKRIT)),
+        'dharma',
+    );
+});
+
+test('Brahmic direct options control schwa, vowel length, and terminal anusvara', static function (): void {
+    same(
+        toPlainEnglishFromGujarati('નટવર', new BrahmicPlainEnglishOptions(schwaDeletion: BrahmicSchwaDeletionPolicy::NONE)),
+        'natavara',
+    );
+    same(
+        toPlainEnglishFromGujarati('આજ', new BrahmicPlainEnglishOptions(vowelLength: BrahmicVowelLengthPolicy::COLLAPSE)),
+        'aj',
+    );
+    same(
+        toPlainEnglishFromGujarati('શું', new BrahmicPlainEnglishOptions(terminalAnusvara: TerminalAnusvaraPolicy::DROP)),
+        'shu',
+    );
+});
+
+test('bulk Brahmic direct APIs are exported', static function (): void {
+    same(toPlainEnglishFromGujaratiList(['આજ', 'નટવર']), ['aaj', 'natvar']);
+    same(toHunterianFromGujaratiList(['સમાચાર', 'સર્વે']), ['samachar', 'sarve']);
+});
+
+test('direct result envelopes retain the exact Brahmic source', static function (): void {
+    $plain = toPlainEnglishFromGujaratiResult('આજ મારે');
+    same($plain->original, 'આજ મારે');
+    same($plain->restoreOriginal(), 'આજ મારે');
+    same($plain->rendered, 'aaj maare');
+    same($plain->profile, TransliterationProfile::PLAIN_ENGLISH);
+
+    $hunterian = toHunterianFromGujaratiResult('સમાચાર');
+    same($hunterian->restoreOriginal(), 'સમાચાર');
+    same($hunterian->rendered, 'samachar');
+    same($hunterian->profile, TransliterationProfile::HUNTERIAN);
+});
+
+test('canonical Gujarati and legacy IAST Hunterian behavior remain unchanged', static function (): void {
+    same(toCanonicalIastFromGujarati('સમાચાર'), 'samācāra');
+    $hunterian = new IastPlainEnglishOptions(profile: PlainEnglishRomanizationProfile::HUNTERIAN);
+    same(toPlainEnglishFromIast('Sarasvatī', $hunterian), 'Saraswati');
+    same(toPlainEnglishFromIast('Rāma', $hunterian), 'Ram');
+});
+
+test('Unicode 18.0 Brahmic repertoire: rare Devanagari characters', static function (): void {
+    same(toCanonicalIastFromDevanagari('ऩ'), 'ṉa');
+    same(toCanonicalIastFromDevanagari('ऱ'), 'ṟa');
+    same(toCanonicalIastFromDevanagari('क़'), 'qa');
+    same(toCanonicalIastFromDevanagari('ख़'), 'xa');
+    same(toCanonicalIastFromDevanagari('ग़'), 'ġa');
+    same(toCanonicalIastFromDevanagari('ज़'), 'za');
+    same(toCanonicalIastFromDevanagari('ड़'), 'ṛa');
+    same(toCanonicalIastFromDevanagari('ढ़'), 'ṛha');
+    same(toCanonicalIastFromDevanagari('फ़'), 'fa');
+    same(toCanonicalIastFromDevanagari('य़'), 'ẏa');
+    same(toCanonicalIastFromDevanagari('च़'), 'ċa');
+    same(toPlainEnglishFromDevanagari('च़'), 'tsa');
+    same(toHunterianFromDevanagari('च़'), 'tsa');
+    same(toDevanagariFromIast('ċa'), 'च़');
+    $preserve = new ScriptToIastOptions(inputNormalization: UnicodeNormalizationForm::PRESERVE);
+    same(toCanonicalIastFromDevanagari('क़', $preserve), 'qa');
+    same(toCanonicalIastFromDevanagari('ड़', $preserve), 'ṛa');
+    same(toCanonicalIastFromDevanagari('ऀ'), "\u{0310}");
+    same(toCanonicalIastFromDevanagari('॓'), "\u{0300}");
+    same(toCanonicalIastFromDevanagari('॔'), "\u{0301}");
+    same(toCanonicalIastFromDevanagari('ॕ'), 'ē');
+    same(toPlainEnglishFromDevanagari('ऻ'), 'ooe');
+    same(toPlainEnglishFromDevanagari('ॕ'), 'ee');
+    same(toPlainEnglishFromDevanagari('ॴ'), 'ooe');
+    same(toPlainEnglishFromDevanagari('॒॑᳚'), '');
+    same(toPlainEnglishFromDevanagari('हाँ'), 'haan');
+    same(toHunterianFromDevanagari('हाँ'), 'han');
+    same(toPlainEnglishFromGujarati('હાઁ'), 'haan');
+    same(toPlainEnglishFromDevanagari('़्'), '');
+    same(toPlainEnglishFromGujarati('઼્ૺૻૼ૽૾૿'), '');
+    same(toCanonicalIastFromDevanagari('कॎ'), 'ke');
+    same(toCanonicalIastFromDevanagari('कॎे'), 'kai');
+    same(toCanonicalIastFromDevanagari('कॎा'), 'ko');
+    same(toCanonicalIastFromDevanagari('कॎो'), 'kau');
+    same(toPlainEnglishFromDevanagari('कॎे'), 'kai');
+    same(toHunterianFromDevanagari('कॎो'), 'kau');
+    same(toCanonicalIastFromDevanagari('॰'), '॰');
+    same(toCanonicalIastFromDevanagari('ॱ'), 'ॱ');
+});
+
+test('Unicode 18.0 Brahmic repertoire: Devanagari Extended vowels and sacred signs', static function (): void {
+    same(toCanonicalIastFromDevanagari('ꣾ'), 'aĭ');
+    same(toCanonicalIastFromDevanagari('कꣿ'), 'kaĭ');
+    same(toPlainEnglishFromDevanagari('कꣿ'), 'kai');
+    same(toPlainEnglishFromDevanagari('ꣾ'), 'ai');
+    same(toHunterianFromDevanagari('ꣾ'), 'ai');
+    same(toCanonicalIastFromDevanagari('ꣽ'), 'oṃ');
+    same(toPlainEnglishFromDevanagari('ꣽ'), 'om');
+    same(toPlainEnglishFromDevanagari('ॐ'), 'om');
+    same(toPlainEnglishFromGujarati('ૐ'), 'om');
+    same(toHunterianFromDevanagari('ॐ'), 'om');
+    same(toCanonicalIastFromDevanagari('a꣼b'), 'a꣼b');
+    same(toCanonicalIastFromDevanagari('a꣡'), 'a꣡');
+    same(toPlainEnglishFromGujarati('a꣡'), 'a');
+    same(toCanonicalIastFromDevanagari('ꣲ'), 'ṃꣲ');
+    same(toCanonicalIastFromDevanagari('ꣴ'), 'ṃṃꣴ');
+    same(toCanonicalIastFromDevanagari('ꣷ'), "ṃ'ꣷ");
+    same(toPlainEnglishFromDevanagari('कꣲ'), 'kan');
+    same(toHunterianFromDevanagari('कꣴ'), 'kann');
+    same((bool) preg_match('/[ꣲ-ꣷ]/u', toPlainEnglishFromDevanagari('कꣲꣴꣷ')), false, 'special nasal signs do not leak into Plain');
+    same(toCanonicalIastFromDevanagari('राम꣸'), 'rāma꣸');
+    same(toPlainEnglishFromDevanagari('राम꣸'), 'raam꣸');
+});
+
+test('Unicode 18.0 Brahmic repertoire: Vedic Extensions keep their segments', static function (): void {
+    same(toCanonicalIastFromDevanagari('क᳐'), 'ka᳐');
+    same(toPlainEnglishFromDevanagari('क᳐'), 'ka');
+    $preserveVedic = new BrahmicPlainEnglishOptions(preserveVedicAccentMarks: true);
+    same(toCanonicalIastFromDevanagari('क⃰'), 'ka⃰');
+    same(toPlainEnglishFromDevanagari('क⃰'), 'ka');
+    same(toPlainEnglishFromDevanagari('क⃰', $preserveVedic), 'ka⃰');
+    same(toPlainEnglishFromDevanagari('क॑', $preserveVedic), "ka\u{0301}");
+    $visarga = toCanonicalIastFromDevanagari('देवः᳣');
+    same(str_contains($visarga, 'ḥ'), true, 'visarga kept');
+    same(str_contains($visarga, '᳣'), true, 'mark kept');
+    same(str_contains(toPlainEnglishFromDevanagari('देवः᳣'), '᳣'), false, 'mark dropped in plain');
+    same(toCanonicalIastFromDevanagari('ᳩ'), 'ṃᳩ');
+    same(toCanonicalIastFromDevanagari('ᳺ'), 'ṃᳺ');
+    same(toCanonicalIastFromDevanagari('ᳲ'), 'ḥᳲ');
+    same(toCanonicalIastFromDevanagari('ᳵ'), 'ḫᳵ');
+    same(toCanonicalIastFromDevanagari('ᳶ'), 'fᳶ');
+    same(toCanonicalIastFromDevanagari('ॻ'), 'ɠa');
+    same(toCanonicalIastFromDevanagari('ॼ'), 'ʄa');
+    same(toCanonicalIastFromDevanagari('ॾ'), 'ɗa');
+    same(toCanonicalIastFromDevanagari('ॿ'), 'ɓa');
+    same(toCanonicalIastFromDevanagari('𑬊'), 'ɗa');
+    same(toPlainEnglishFromDevanagari('ॻॼॾॿ'), 'gajadab');
+    same(toDevanagariFromIast('ɠa'), 'ॻ');
+    same(toDevanagariFromIast('ʄa'), 'ॼ');
+    same(toCanonicalIastFromDevanagari('𑬀'), '𑬀');
+    same(toCanonicalIastFromDevanagari('꠱'), '꠱');
+    same(toCanonicalIastFromDevanagari('राम꠱'), 'rāma꠱');
+    same(toPlainEnglishFromDevanagari('राम꠱'), 'raam꠱');
+    same(toCanonicalIastFromDevanagari("क\u{200D}"), 'ka');
+    same(toCanonicalIastFromDevanagari("क\u{200C}"), 'ka');
+});
+
+test('Unicode 18.0 Brahmic repertoire: Gujarati Arabic-transliteration marks', static function (): void {
+    same(toCanonicalIastFromGujarati('કૺ'), 'k');
+    same(toPlainEnglishFromGujarati('કૺ'), 'k');
+    same(toHunterianFromGujarati('કૺ'), 'k');
+    same(toCanonicalIastFromGujarati('અૺ'), 'a');
+    same(toPlainEnglishFromGujarati('અૺ'), 'a');
+    same(toCanonicalIastFromGujarati('કુૺ'), 'ku');
+    same(toPlainEnglishFromGujarati('કુૺ'), 'ku');
+    same(toCanonicalIastFromGujarati('નૻ'), 'nn');
+    same(toPlainEnglishFromGujarati('નૻ'), 'nn');
+    same(toCanonicalIastFromGujarati('કૼ'), 'kā');
+    same(toPlainEnglishFromGujarati('કૼ'), 'kaa');
+    same(toHunterianFromGujarati('કૼ'), 'ka');
+    same(toCanonicalIastFromGujarati('કુૼ'), 'kū');
+    same(toPlainEnglishFromGujarati('કુૼ'), 'koo');
+    same(toHunterianFromGujarati('કુૼ'), 'ku');
+    same(toCanonicalIastFromGujarati('સ૾'), 'tha');
+    same(toCanonicalIastFromGujarati('ઝ૾'), 'dha');
+    same(toCanonicalIastFromGujarati('ઝ૿'), 'ẓa');
+    same(toCanonicalIastFromGujarati('ક૽'), 'qa');
+    same(toPlainEnglishFromGujarati('સ૾'), 'tha');
+    same(toHunterianFromGujarati('ઝ૿'), 'za');
+    same(toCanonicalIastFromGujarati('ક૽ુ'), 'qu');
+    same(toCanonicalIastFromGujarati('ક૽ૺ'), 'q');
+    same(toCanonicalIastFromGujarati('સ૾ૻ'), 'thth');
+    same(toCanonicalIastFromGujarati('અ૽'), 'ʿa');
+    same(toCanonicalIastFromGujarati('ઇ૽'), 'ʿi');
+    same(toPlainEnglishFromGujarati('અ૽'), "'a");
+    same(toPlainEnglishFromGujarati('અ૽', new BrahmicPlainEnglishOptions(ayn: AynPolicy::DROP)), 'a');
+    same(toPlainEnglishFromGujarati('અ૽', new BrahmicPlainEnglishOptions(ayn: AynPolicy::PRESERVE)), 'ʿa');
+    same(toCanonicalIastFromGujarati('૰'), '૰');
+    same(toCanonicalIastFromGujarati('૱'), '૱');
 });
 
 test('Latin/IAST → Devanagari matches the 497-case Dart oracle', static function () use ($oracle): void {
@@ -217,13 +471,13 @@ test('plain-English policies and Hunterian samples match Dart', static function 
     $keep = new IastPlainEnglishOptions(finalA: FinalAPolicy::KEEP);
     $drop = new IastPlainEnglishOptions(finalA: FinalAPolicy::DROP);
     $jna = new IastPlainEnglishOptions(jna: JnaPolicy::JNA);
-    same(array_map(static fn(string $s): string => toPlainEnglishFromIast($s, $keep), $base), ['Rama','vrata','Krishna','Lakshmana','yatra']);
-    same(array_map(static fn(string $s): string => toPlainEnglishFromIast($s, $drop), $base), ['Ram','vrat','Krishn','Lakshman','yatra']);
-    same(array_map(static fn(string $s): string => toPlainEnglishFromIast($s, $jna), ['jñāna','yajña']), ['jnan','yajn']);
+    same(array_map(static fn(string $s): string => toPlainEnglishFromIast($s, $keep), $base), ['Rama', 'vrata', 'Krishna', 'Lakshmana', 'yatra']);
+    same(array_map(static fn(string $s): string => toPlainEnglishFromIast($s, $drop), $base), ['Ram', 'vrat', 'Krishn', 'Lakshman', 'yatra']);
+    same(array_map(static fn(string $s): string => toPlainEnglishFromIast($s, $jna), ['jñāna', 'yajña']), ['jnan', 'yajn']);
 
     $hunterian = new IastPlainEnglishOptions(profile: PlainEnglishRomanizationProfile::HUNTERIAN);
-    $samples = ['Rāma','Kṛṣṇa','Lakṣmaṇa','laṛkā','Rāmacandra','Gorakhapura','Sarasvatī','Īśvara','pañcāṅga','duḥkha','Devadatta','Jaideva','Kalyāṇapura','Nārāyaṇapura','Hariprasāda','Kṛṣṇadāsa'];
-    $expected = ['Ram','Krishna','Lakshman','larka','Ramachandra','Gorakhapur','Saraswati','Ishwar','panchang','dukh','Devadatt','Jaidev','Kalyanapur','Narayanapur','Hariprasad','Krishnadas'];
+    $samples = ['Rāma', 'Kṛṣṇa', 'Lakṣmaṇa', 'laṛkā', 'Rāmacandra', 'Gorakhapura', 'Sarasvatī', 'Īśvara', 'pañcāṅga', 'duḥkha', 'Devadatta', 'Jaideva', 'Kalyāṇapura', 'Nārāyaṇapura', 'Hariprasāda', 'Kṛṣṇadāsa'];
+    $expected = ['Ram', 'Krishna', 'Lakshman', 'larka', 'Ramachandra', 'Gorakhapur', 'Saraswati', 'Ishwar', 'panchang', 'dukh', 'Devadatt', 'Jaidev', 'Kalyanapur', 'Narayanapur', 'Hariprasad', 'Krishnadas'];
     same(array_map(static fn(string $s): string => toPlainEnglishFromIast($s, $hunterian), $samples), $expected);
 });
 
