@@ -139,7 +139,7 @@ final class BrahmicToIastConverter
 {
     private function __construct() {}
 
-    public static function convert(string $inputText, ScriptConfig $config, ScriptToIastOptions $options, string $inherentVowel = 'a'): string
+    public static function convert(string $inputText, ScriptConfig $config, ScriptToIastOptions $options, string $inherentVowel = 'a', ?array $readableOverrides = null): string
     {
         $visible = stripExactSourceMetadata($inputText);
         $normalized = normalizeUnicode($visible, $options->inputNormalization);
@@ -152,7 +152,7 @@ final class BrahmicToIastConverter
 
             $independent = $config->independentVowels[$ch] ?? null;
             if ($independent !== null) {
-                $latin = $independent;
+                $latin = $readableOverrides['independentVowels'][$ch] ?? $independent;
                 ++$i;
                 if ($config === gujaratiScriptConfig() && ($ch === 'અ' || $ch === 'ઇ') && ($chars[$i] ?? null) === '૽') {
                     $latin = 'ʿ' . $latin;
@@ -189,7 +189,7 @@ final class BrahmicToIastConverter
 
             $consonant = $config->consonants[$consonantKey] ?? null;
             if ($consonant !== null) {
-                $latin = $consonant;
+                $latin = $readableOverrides['consonants'][$consonantKey] ?? $consonant;
                 $cursor = $i + $consonantWidth;
                 $geminated = false;
                 $sukun = false;
@@ -564,6 +564,8 @@ function to_canonical_iast_from_gujarati(string $text, ?ScriptToIastOptions $opt
 }
 
 const INHERENT_SCHWA = "\u{E100}";
+// Medial schwa deleted by natural mode. Stays inside the word until vowel length.
+const SYLLABLE_BREAK = "\u{E101}";
 
 enum BrahmicLanguage: string
 {
@@ -584,6 +586,13 @@ enum BrahmicVowelLengthPolicy: string
 {
     case COLLAPSE = 'collapse';
     case DOUBLE = 'double';
+    case SMART = 'smart';
+}
+
+enum BrahmicReadableStyle: string
+{
+    case LEGACY = 'legacy';
+    case NATURAL = 'natural';
 }
 
 enum TerminalAnusvaraPolicy: string
@@ -617,6 +626,10 @@ final readonly class BrahmicPlainEnglishOptions
         public bool $collapseWhitespace = false,
         public bool $preserveVedicAccentMarks = false,
         public ?bool $useWForVAfterConsonants = null,
+        public BrahmicReadableStyle $readableStyle = BrahmicReadableStyle::LEGACY,
+        public bool $capitalizeSentenceStarts = false,
+        /** @var array<string,string> */
+        public array $readableWordOverrides = [],
     ) {}
 }
 
@@ -718,7 +731,7 @@ function restoreSourceLatin(string $text, array $spans): string
 /**
  * @return list<array{type:string,text:string,implicit:bool,deleted:bool}>
  */
-function tokenizeAnnotatedBrahmicWord(string $word): array
+function tokenizeAnnotatedBrahmicWord(string $word, bool $separateVocalicRh = false): array
 {
     $chars = Unicode::split($word);
     $tokens = [];
@@ -734,10 +747,28 @@ function tokenizeAnnotatedBrahmicWord(string $word): array
             continue;
         }
 
+        if ($ch === SYLLABLE_BREAK) {
+            $tokens[] = ['type' => 'boundary', 'text' => '', 'implicit' => false, 'deleted' => false];
+            ++$i;
+            continue;
+        }
+
         $pair = $i + 1 < count($chars) ? $ch . $chars[$i + 1] : '';
         if ($pair === 'ai' || $pair === 'au') {
             $tokens[] = ['type' => 'vowel', 'text' => $pair, 'implicit' => false, 'deleted' => false];
             $i += 2;
+            continue;
+        }
+
+        $previous = $tokens === [] ? null : $tokens[array_key_last($tokens)];
+        if (
+            $separateVocalicRh
+            && Unicode::lower($pair) === 'ṛh'
+            && is_array($previous)
+            && $previous['type'] === 'consonant'
+        ) {
+            $tokens[] = ['type' => 'vowel', 'text' => $ch, 'implicit' => false, 'deleted' => false];
+            ++$i;
             continue;
         }
 
@@ -794,10 +825,28 @@ function brahmicBaseConsonant(array $token): string
 }
 
 /**
+ * @param array{type:string,text:string,implicit:bool,deleted:bool} $token
+ */
+function isAspiratedBrahmicGha(array $token): bool
+{
+    return Unicode::lower($token['text']) === 'gh';
+}
+
+/**
+ * @param array{type:string,text:string,implicit:bool,deleted:bool} $token
+ */
+function isAspiratedBrahmicDental(array $token): bool
+{
+    $text = Unicode::lower($token['text']);
+
+    return $text === 'th' || $text === 'ṭh';
+}
+
+/**
  * @param array{type:string,text:string,implicit:bool,deleted:bool} $left
  * @param array{type:string,text:string,implicit:bool,deleted:bool} $right
  */
-function allowsBrahmicSchwaCluster(array $left, array $right, BrahmicLanguage $language): bool
+function allowsBrahmicSchwaCluster(array $left, array $right, BrahmicLanguage $language, BrahmicReadableStyle $readableStyle = BrahmicReadableStyle::LEGACY): bool
 {
     $a = brahmicBaseConsonant($left);
     $b = brahmicBaseConsonant($right);
@@ -806,7 +855,40 @@ function allowsBrahmicSchwaCluster(array $left, array $right, BrahmicLanguage $l
     if ($language === BrahmicLanguage::GUJARATI) {
         if ($b === 'v' || $b === 'n') { return true; }
 
-        return in_array($a . '+' . $b, ['b+t', 'r+m', 'ś+m', 'ṣ+m', 's+m', 'ṇ+l', 'n+l'], true);
+        $pair = $a . '+' . $b;
+        if (in_array($pair, ['b+t', 'r+m', 'ś+m', 'ṣ+m', 's+m', 'ṇ+l', 'n+l'], true)) {
+            return true;
+        }
+
+        if ($readableStyle !== BrahmicReadableStyle::NATURAL) { return false; }
+
+        if (($a === 'n' || $a === 'ṇ') && isAspiratedBrahmicGha($right)) { return true; }
+
+        if ($a === 'p' && isAspiratedBrahmicDental($right)) { return true; }
+
+        return in_array($pair, [
+            't+l', 'ṭ+l', 'ḍ+m', 'd+m', 'm+m', 'm+d', 't+d', 't+y', 'k+l', 'k+r', 'j+k',
+            'r+d', 'l+m', 'ḷ+m', 'ḻ+m', 'l+j', 'ḷ+j', 'ḻ+j',
+        ], true);
+    }
+
+    $pair = $a . '+' . $b;
+    if ($readableStyle === BrahmicReadableStyle::NATURAL && ($a === 'n' || $a === 'ṇ') && isAspiratedBrahmicGha($right)) {
+        return true;
+    }
+
+    if ($readableStyle === BrahmicReadableStyle::NATURAL && $a === 'p' && isAspiratedBrahmicDental($right)) {
+        return true;
+    }
+
+    if (
+        $readableStyle === BrahmicReadableStyle::NATURAL
+        && in_array($pair, [
+            't+d', 't+y', 't+n', 'k+l', 'r+d', 'p+n',
+            'd+n', 'd+m', 'ḍ+n', 'ḍ+k', 'h+l', 'h+n', 'c+n',
+        ], true)
+    ) {
+        return true;
     }
 
     if (in_array($b, ['r', 'y', 'v'], true)) { return true; }
@@ -839,9 +921,109 @@ function shouldKeepBrahmicFinalSchwa(array $tokens, int $lastIndex): bool
     return in_array($pair, ['r+y', 'l+y', 'n+y', 'm+y', 'g+y', 'ś+ṇ', 'ṣ+ṇ', 's+ṇ'], true);
 }
 
-function naturalizeAnnotatedBrahmicWord(string $word, BrahmicLanguage $language, BrahmicSchwaDeletionPolicy $policy): string
+/**
+ * @param array{type:string,text:string,implicit?:bool,deleted?:bool}|null $bearing
+ * @param array{type:string,text:string,implicit?:bool,deleted?:bool}|null $next
+ * @param array{type:string,text:string,implicit?:bool,deleted?:bool}|null $following
+ */
+function isImplicitBrahmicNagarSchwa(?array $bearing, ?array $next, ?array $following): bool
 {
-    $tokens = tokenizeAnnotatedBrahmicWord($word);
+    if ($bearing === null || $next === null || $following === null) { return false; }
+
+    if ($bearing['type'] !== 'consonant' || $next['type'] !== 'consonant') { return false; }
+
+    if (($following['implicit'] ?? false) !== true || isAspiratedBrahmicGha($next)) { return false; }
+
+    if (brahmicBaseConsonant($next) !== 'g') { return false; }
+
+    $left = brahmicBaseConsonant($bearing);
+
+    return in_array($left, ['m', 'n', 'ṇ'], true);
+}
+
+/**
+ * @param array{type:string,text:string,implicit?:bool,deleted?:bool}|null $bearing
+ * @param array{type:string,text:string,implicit?:bool,deleted?:bool}|null $next
+ * @param array{type:string,text:string,implicit?:bool,deleted?:bool}|null $following
+ */
+function isHindiBrahmicNaSuffix(?array $bearing, ?array $next, ?array $following): bool
+{
+    if ($bearing === null || $next === null || $following === null) { return false; }
+
+    if ($bearing['type'] !== 'consonant' || $next['type'] !== 'consonant') { return false; }
+
+    if ($following['type'] !== 'vowel' || ($following['implicit'] ?? false)) { return false; }
+
+    if (Unicode::lower($following['text']) !== 'ā') { return false; }
+
+    $right = brahmicBaseConsonant($next);
+    if ($right !== 'n' && $right !== 'ṇ') { return false; }
+
+    $left = brahmicBaseConsonant($bearing);
+    $nasal = ['m', 'n', 'ṇ', 'ñ', 'ṅ'];
+
+    return !in_array($left, $nasal, true) || !in_array($right, $nasal, true);
+}
+
+/**
+ * @param array{type:string,text:string}|null $next
+ * @param array{type:string,text:string}|null $following
+ */
+function isGujaratiBrahmicThiSuffix(?array $next, ?array $following): bool
+{
+    if ($next === null || $following === null) { return false; }
+
+    if ($next['type'] !== 'consonant' || $following['type'] !== 'vowel') { return false; }
+
+    $consonant = Unicode::lower($next['text']);
+    $vowel = Unicode::lower($following['text']);
+
+    return ($consonant === 'th' || $consonant === 'ṭh') && ($vowel === 'ī' || $vowel === 'i');
+}
+
+/**
+ * @param array{type:string,text:string}|null $next
+ * @param array{type:string,text:string}|null $following
+ * @param list<array{type:string,text:string,implicit:bool,deleted:bool}> $tokens
+ */
+function isGujaratiBrahmicMamSuffix(?array $next, ?array $following, array $tokens, int $vowelIndex): bool
+{
+    if ($next === null || $following === null) { return false; }
+
+    if ($next['type'] !== 'consonant' || $following['type'] !== 'vowel') { return false; }
+
+    if (brahmicBaseConsonant($next) !== 'm') { return false; }
+
+    $vowel = Unicode::lower($following['text']);
+    if ($vowel !== 'ā' && $vowel !== 'a') { return false; }
+
+    $nasalIndex = $vowelIndex + 1;
+    while ($nasalIndex < count($tokens) && $tokens[$nasalIndex]['deleted']) { ++$nasalIndex; }
+
+    return isset($tokens[$nasalIndex])
+        && $tokens[$nasalIndex]['type'] === 'sign'
+        && ($tokens[$nasalIndex]['text'] === 'ṃ' || $tokens[$nasalIndex]['text'] === 'ṁ');
+}
+
+/**
+ * @param list<array{type:string,text:string,implicit:bool,deleted:bool}> $tokens
+ */
+function hasBrahmicSchwaLeftVowel(array $tokens, int $beforeIndex, bool $allowCodaSkip): bool
+{
+    if ($beforeIndex < 0 || !isset($tokens[$beforeIndex])) { return false; }
+
+    if ($tokens[$beforeIndex]['type'] === 'vowel') { return true; }
+
+    if (!$allowCodaSkip || $tokens[$beforeIndex]['type'] !== 'consonant') { return false; }
+
+    if (!in_array(brahmicBaseConsonant($tokens[$beforeIndex]), ['r', 'y', 'l', 'v'], true)) { return false; }
+
+    return $beforeIndex - 1 >= 0 && $tokens[$beforeIndex - 1]['type'] === 'vowel';
+}
+
+function naturalizeAnnotatedBrahmicWord(string $word, BrahmicLanguage $language, BrahmicSchwaDeletionPolicy $policy, BrahmicReadableStyle $readableStyle = BrahmicReadableStyle::LEGACY): string
+{
+    $tokens = tokenizeAnnotatedBrahmicWord($word, $readableStyle === BrahmicReadableStyle::NATURAL);
     if ($policy === BrahmicSchwaDeletionPolicy::NONE || $language === BrahmicLanguage::SANSKRIT) {
         return implode('', array_map(static fn(array $t): string => $t['text'], $tokens));
     }
@@ -858,37 +1040,81 @@ function naturalizeAnnotatedBrahmicWord(string $word, BrahmicLanguage $language,
         for ($i = count($tokens) - 2; $i >= 2; --$i) {
             if (!$tokens[$i]['implicit'] || $tokens[$i]['deleted']) { continue; }
 
+            $beforeIndex = $i - 2;
+            if ($readableStyle === BrahmicReadableStyle::NATURAL && $language !== BrahmicLanguage::SANSKRIT) {
+                while ($beforeIndex >= 0 && $tokens[$beforeIndex]['type'] === 'sign') { --$beforeIndex; }
+            }
+
             $nextIndex = $i + 1;
             while ($nextIndex < count($tokens) && $tokens[$nextIndex]['deleted']) { ++$nextIndex; }
 
             $afterNext = $nextIndex + 1;
             while ($afterNext < count($tokens) && $tokens[$afterNext]['deleted']) { ++$afterNext; }
 
+            $next = $nextIndex < count($tokens) ? $tokens[$nextIndex] : null;
+            $following = $afterNext < count($tokens) ? $tokens[$afterNext] : null;
+            $naturalModern = $readableStyle === BrahmicReadableStyle::NATURAL && $language !== BrahmicLanguage::SANSKRIT;
+            $mamSuffix = $naturalModern
+                && $language === BrahmicLanguage::GUJARATI
+                && isGujaratiBrahmicMamSuffix($next, $following, $tokens, $afterNext);
+            $thiSuffix = $naturalModern
+                && $language === BrahmicLanguage::GUJARATI
+                && isGujaratiBrahmicThiSuffix($next, $following);
+            $bearing = $tokens[$i - 1];
+            $naSuffix = $naturalModern
+                && $language === BrahmicLanguage::HINDI
+                && isHindiBrahmicNaSuffix($bearing, $next, $following);
+            $keepNagarSchwa = $naturalModern
+                && $language === BrahmicLanguage::HINDI
+                && isImplicitBrahmicNagarSchwa($bearing, $next, $following);
+
+            $rightOnsetHasVowel = $afterNext < count($tokens) && $tokens[$afterNext]['type'] === 'vowel';
             if (
-                $tokens[$i - 1]['type'] === 'consonant'
-                && $tokens[$i - 2]['type'] === 'vowel'
+                !$rightOnsetHasVowel
+                && $readableStyle === BrahmicReadableStyle::NATURAL
+                && $language !== BrahmicLanguage::SANSKRIT
+                && $afterNext < count($tokens)
+                && $tokens[$afterNext]['type'] === 'consonant'
+                && in_array(brahmicBaseConsonant($tokens[$afterNext]), ['r', 'y', 'v', 'l'], true)
+            ) {
+                $afterCluster = $afterNext + 1;
+                while ($afterCluster < count($tokens) && $tokens[$afterCluster]['deleted']) { ++$afterCluster; }
+
+                $rightOnsetHasVowel = $afterCluster < count($tokens) && $tokens[$afterCluster]['type'] === 'vowel';
+            }
+
+            if (
+                $bearing['type'] === 'consonant'
+                && hasBrahmicSchwaLeftVowel($tokens, $beforeIndex, $mamSuffix || $thiSuffix)
                 && $nextIndex < count($tokens)
                 && $tokens[$nextIndex]['type'] === 'consonant'
-                && $afterNext < count($tokens)
-                && $tokens[$afterNext]['type'] === 'vowel'
-                && allowsBrahmicSchwaCluster($tokens[$i - 1], $tokens[$nextIndex], $language)
+                && $rightOnsetHasVowel
+                && ($thiSuffix || $naSuffix || (!$keepNagarSchwa && allowsBrahmicSchwaCluster($bearing, $tokens[$nextIndex], $language, $readableStyle)))
             ) {
                 $tokens[$i]['deleted'] = true;
+                if ($naturalModern) {
+                    $tokens[$i]['boundary'] = true;
+                }
             }
         }
     }
 
-    return implode('', array_map(static fn(array $t): string => $t['deleted'] ? '' : $t['text'], $tokens));
+    return implode('', array_map(
+        static fn(array $t): string => $t['deleted']
+            ? (empty($t['boundary']) ? '' : SYLLABLE_BREAK)
+            : $t['text'],
+        $tokens,
+    ));
 }
 
 function isBrahmicTranscriptionWordChar(string $ch): bool
 {
-    if ($ch === INHERENT_SCHWA) { return true; }
+    if ($ch === INHERENT_SCHWA || $ch === SYLLABLE_BREAK) { return true; }
 
     return preg_match('/[A-Za-z\x{00C0}-\x{024F}\x{0250}-\x{02FF}\x{1E00}-\x{1EFF}\p{M}]/u', $ch) === 1;
 }
 
-function naturalizeAnnotatedBrahmicIast(string $text, BrahmicLanguage $language, BrahmicSchwaDeletionPolicy $policy): string
+function naturalizeAnnotatedBrahmicIast(string $text, BrahmicLanguage $language, BrahmicSchwaDeletionPolicy $policy, BrahmicReadableStyle $readableStyle = BrahmicReadableStyle::LEGACY): string
 {
     $chars = Unicode::split($text);
     $out = [];
@@ -902,21 +1128,556 @@ function naturalizeAnnotatedBrahmicIast(string $text, BrahmicLanguage $language,
         $start = $i++;
         while ($i < count($chars) && isBrahmicTranscriptionWordChar($chars[$i])) { ++$i; }
 
-        $out[] = naturalizeAnnotatedBrahmicWord(implode('', array_slice($chars, $start, $i - $start)), $language, $policy);
+        $out[] = naturalizeAnnotatedBrahmicWord(
+            implode('', array_slice($chars, $start, $i - $start)),
+            $language,
+            $policy,
+            $readableStyle,
+        );
     }
 
     return implode('', $out);
 }
 
-function applyReadableBrahmicVowelLength(string $text, BrahmicVowelLengthPolicy $policy): string
+/**
+ * @param callable(string): string $mapper
+ */
+function mapBrahmicTranscriptionWords(string $text, callable $mapper): string
 {
-    if ($policy !== BrahmicVowelLengthPolicy::DOUBLE) { return $text; }
+    $chars = Unicode::split($text);
+    $out = [];
+    $counter = count($chars);
+    for ($i = 0; $i < $counter;) {
+        if (!isBrahmicTranscriptionWordChar($chars[$i])) {
+            $out[] = $chars[$i++];
+            continue;
+        }
 
+        $start = $i++;
+        while ($i < $counter && isBrahmicTranscriptionWordChar($chars[$i])) { ++$i; }
+
+        $out[] = $mapper(implode('', array_slice($chars, $start, $i - $start)));
+    }
+
+    return implode('', $out);
+}
+
+function applyNaturalBrahmicClusterSpellings(string $word, BrahmicLanguage $language): string
+{
+    if ($language === BrahmicLanguage::SANSKRIT) { return $word; }
+
+    return str_replace(
+        ['śv', 'Śv', 'ṣv', 'Ṣv', 'sv', 'Sv', 'dv', 'Dv'],
+        ['św', 'Św', 'ṣw', 'Ṣw', 'sw', 'Sw', 'dw', 'Dw'],
+        $word,
+    );
+}
+
+function endsWithClosedBrahmicResonant(string $word): bool
+{
+    $chars = Unicode::split($word);
+    $count = count($chars);
+    if ($count < 2) { return false; }
+
+    $last = Unicode::lower($chars[$count - 1]);
+    if (!str_contains('ryvw', $last)) { return false; }
+
+    $prev = Unicode::lower($chars[$count - 2]);
+
+    return !str_contains('aāiīuūeēoōṛṝḷḹăêĕĭôŏæœ', $prev);
+}
+
+function applyBrahmicNaturalMorphology(string $text, BrahmicLanguage $language): string
+{
+    return mapBrahmicTranscriptionWords($text, static function (string $word) use ($language): string {
+        if ($language === BrahmicLanguage::GUJARATI) {
+            $word = (string) preg_replace('/māṃthī$/u', 'mathī', $word);
+            $word = (string) preg_replace('/māṃ$/u', 'ma', $word);
+            if (preg_match('/[aāiīuūeēoōṛṝḷḹăêĕĭôŏæœ].*āṃ$/u', $word) === 1) {
+                $word = (string) preg_replace('/āṃ$/u', 'ā', $word);
+            }
+
+            $word = (string) preg_replace('/uṃ$/u', 'u', $word);
+            $word = (string) preg_replace('/a[ṃṁ][īi]/u', 'ai', $word);
+        }
+
+        $word = applyNaturalBrahmicClusterSpellings($word, $language);
+
+        if ($language === BrahmicLanguage::HINDI && str_ends_with($word, 'ie')) {
+            $word = substr($word, 0, -2) . 'iye';
+        } elseif ($language === BrahmicLanguage::HINDI && str_ends_with($word, 'IE')) {
+            $word = substr($word, 0, -2) . 'IYE';
+        }
+
+        if ($language !== BrahmicLanguage::SANSKRIT && endsWithClosedBrahmicResonant($word)) {
+            $word .= 'a';
+        }
+
+        return $word;
+    });
+}
+
+/**
+ * @return array{independentVowels:array<string,string>,consonants:array<string,string>}|null
+ */
+function naturalReadableBrahmicOverrides(
+    ScriptConfig $config,
+    BrahmicLanguage $language,
+    BrahmicReadableStyle $readableStyle,
+): ?array {
+    if ($readableStyle !== BrahmicReadableStyle::NATURAL) { return null; }
+
+    $independentVowels = [];
+    $consonants = [];
+
+    if ($language !== BrahmicLanguage::SANSKRIT) {
+        if ($config === devanagariScriptConfig()) {
+            $consonants['ड़'] = 'ḍ';
+            $consonants['ढ़'] = 'ḍh';
+        } elseif ($config === gujaratiScriptConfig()) {
+            $consonants['ડ઼'] = 'ḍ';
+            $consonants['ઢ઼'] = 'ḍh';
+        }
+    }
+
+    if ($config === gujaratiScriptConfig()) {
+        $consonants['ળ'] = 'ḻ';
+        if ($language === BrahmicLanguage::GUJARATI) {
+            $independentVowels['ઋ'] = 'ru';
+        }
+    } elseif ($config === devanagariScriptConfig()) {
+        $consonants['ळ'] = 'ḻ';
+        if ($language === BrahmicLanguage::GUJARATI) {
+            $independentVowels['ऋ'] = 'ru';
+        }
+    }
+
+    if ($independentVowels === [] && $consonants === []) { return null; }
+
+    return [
+        'independentVowels' => $independentVowels,
+        'consonants' => $consonants,
+    ];
+}
+
+function collapseReadableBrahmicVowelLength(string $text): string
+{
+    return str_replace(
+        ['ā', 'Ā', 'ī', 'Ī', 'ū', 'Ū', 'ē', 'Ē', 'ō', 'Ō', 'ṝ', 'Ṝ', 'ḹ', 'Ḹ'],
+        ['a', 'A', 'i', 'I', 'u', 'U', 'e', 'E', 'o', 'O', 'ri', 'Ri', 'li', 'Li'],
+        $text,
+    );
+}
+
+function doubleReadableBrahmicVowelLength(string $text): string
+{
     return str_replace(
         ['āī', 'Āī', 'aī', 'Aī', 'ā', 'Ā', 'ī', 'Ī', 'ū', 'Ū', 'ē', 'Ē', 'ō', 'Ō', 'ṝ', 'Ṝ', 'ḹ', 'Ḹ'],
         ['aai', 'Aai', 'ai', 'Ai', 'aa', 'Aa', 'ee', 'Ee', 'oo', 'Oo', 'ee', 'Ee', 'oo', 'Oo', 'ree', 'Ree', 'lee', 'Lee'],
         $text,
     );
+}
+
+/** @var array<string,string> */
+const LONG_VOWEL_COLLAPSE = [
+    'ā' => 'a', 'Ā' => 'A', 'ī' => 'i', 'Ī' => 'I', 'ū' => 'u', 'Ū' => 'U',
+    'ē' => 'e', 'Ē' => 'E', 'ō' => 'o', 'Ō' => 'O', 'ṝ' => 'ri', 'Ṝ' => 'Ri',
+    'ḹ' => 'li', 'Ḹ' => 'Li',
+];
+
+function collapseBrahmicVowelToken(string $text): string
+{
+    $chars = Unicode::split($text);
+    if ($chars === []) { return $text; }
+
+    $short = LONG_VOWEL_COLLAPSE[$chars[0]] ?? null;
+    if ($short === null) { return $text; }
+
+    $chars[0] = $short;
+
+    return implode('', $chars);
+}
+
+function isLongBrahmicVowelToken(string $text): bool
+{
+    $chars = Unicode::split($text);
+
+    return $chars !== [] && isset(LONG_VOWEL_COLLAPSE[$chars[0]]);
+}
+
+function isCentralLongBrahmicVowel(string $text): bool
+{
+    $chars = Unicode::split($text);
+
+    return $chars !== [] && ($chars[0] === 'ā' || $chars[0] === 'Ā');
+}
+
+/**
+ * @param list<array{type:string,text:string}> $tokens
+ */
+function brahmicCodaWeight(array $tokens): ?int
+{
+    $weight = 0;
+    foreach ($tokens as $token) {
+        if ($token['type'] === 'consonant' || $token['type'] === 'sign') {
+            ++$weight;
+            continue;
+        }
+
+        return null;
+    }
+
+    return $weight;
+}
+
+/**
+ * A liquid or glide across a deleted schwa joins the preceding consonant.
+ *
+ * @param array{type:string,text:string} $token
+ */
+function isClusterFormingBrahmicResonant(array $token): bool
+{
+    $base = brahmicBaseConsonant($token);
+
+    return in_array($base, ['r', 'y', 'l', 'v'], true);
+}
+
+/**
+ * A final open syllable that begins with a nasal is its own clitic.
+ *
+ * @param array{type:string,text:string} $token
+ */
+function isNasalBrahmicConsonant(array $token): bool
+{
+    $base = brahmicBaseConsonant($token);
+
+    return in_array($base, ['m', 'n', 'ṇ', 'ñ', 'ṅ'], true);
+}
+
+/**
+ * @param list<array{type:string,text:string}> $tokens
+ */
+function brahmicCodaHasBoundary(array $tokens): bool
+{
+    foreach ($tokens as $token) {
+        if ($token['type'] === 'boundary') { return true; }
+    }
+
+    return false;
+}
+
+/**
+ * @param list<array{type:string,text:string}> $contact
+ */
+function isLightBrahmicSyllableContact(array $contact): bool
+{
+    $contact = array_values($contact);
+    if (count($contact) === 1 && $contact[0]['type'] === 'consonant') { return true; }
+
+    $at = null;
+    $boundaries = 0;
+    foreach ($contact as $index => $token) {
+        if ($token['type'] !== 'boundary') { continue; }
+
+        ++$boundaries;
+        $at = $index;
+    }
+
+    if ($boundaries !== 1 || $at === null) { return false; }
+
+    $left = array_slice($contact, 0, $at);
+    $right = array_slice($contact, $at + 1);
+    if (brahmicCodaWeight($left) !== 1 || brahmicCodaWeight($right) !== 1) { return false; }
+
+    foreach ($right as $token) {
+        if ($token['type'] === 'consonant') {
+            return !isClusterFormingBrahmicResonant($token);
+        }
+    }
+
+    return false;
+}
+
+function isPeripheralLongBrahmicVowel(string $text): bool
+{
+    return isLongBrahmicVowelToken($text) && !isCentralLongBrahmicVowel($text);
+}
+
+/**
+ * @param array{type:string,text:string} $token
+ */
+function isNasalBrahmicSign(array $token): bool
+{
+    return $token['type'] === 'sign' && ($token['text'] === 'ṃ' || $token['text'] === 'ṁ');
+}
+
+/**
+ * हूँगा writes n+g between ū and the next vowel. The nasal is the coda and the
+ * stop is the next onset. A stop+liquid pair is one onset (રાત્રે).
+ *
+ * @param list<array{type:string,text:string}> $tokens
+ */
+function hasNasalBrahmicCodaBeforeNext(array $tokens, int $vowelIndex, int $nextIndex): bool
+{
+    $between = array_values(array_slice($tokens, $vowelIndex + 1, $nextIndex - $vowelIndex - 1));
+    $consonantAt = [];
+    foreach ($between as $index => $token) {
+        if ($token['type'] !== 'consonant' && $token['type'] !== 'sign') { return false; }
+
+        if ($token['type'] === 'consonant') { $consonantAt[] = $index; }
+    }
+
+    if ($consonantAt === []) { return false; }
+
+    $onset = 1;
+    $lastAt = $consonantAt[count($consonantAt) - 1];
+    if (count($consonantAt) >= 2) {
+        $prevAt = $consonantAt[count($consonantAt) - 2];
+        if ($lastAt === $prevAt + 1 && isClusterFormingBrahmicResonant($between[$lastAt])) {
+            $onset = 2;
+        }
+    }
+
+    if (count($between) <= $onset) { return false; }
+
+    $coda = array_values(array_slice($between, 0, count($between) - $onset));
+    if (brahmicCodaWeight($coda) !== 1) { return false; }
+
+    return isNasalBrahmicConsonant($coda[0]) || isNasalBrahmicSign($coda[0]);
+}
+
+/**
+ * @param list<array{type:string,text:string}> $tokens
+ *
+ * @return array<int,true>
+ */
+function smartBrahmicLengthKeepIndexes(array $tokens): array
+{
+    $keep = [];
+    if ($tokens === []) { return $keep; }
+
+    // A word-initial long vowel has no consonant to carry it (āj, āvīne, ūpar).
+    if ($tokens[0]['type'] === 'vowel' && isLongBrahmicVowelToken($tokens[0]['text'])) {
+        $keep[0] = true;
+    }
+
+    $vowelIndexes = [];
+    foreach ($tokens as $index => $token) {
+        if ($token['type'] === 'vowel') { $vowelIndexes[] = $index; }
+    }
+
+    if ($vowelIndexes === []) { return $keep; }
+
+    // A nasal coda before the next onset keeps a non-final peripheral vowel.
+    $vowelCount = count($vowelIndexes);
+    for ($n = 0; $n < $vowelCount - 1; ++$n) {
+        $index = $vowelIndexes[$n];
+        if (!isPeripheralLongBrahmicVowel($tokens[$index]['text'])) { continue; }
+
+        if (hasNasalBrahmicCodaBeforeNext($tokens, $index, $vowelIndexes[$n + 1])) {
+            $keep[$index] = true;
+        }
+    }
+
+    if (count($vowelIndexes) === 1) {
+        $index = $vowelIndexes[0];
+        $coda = array_slice($tokens, $index + 1);
+        // One coda keeps the vowel (cār, rūp, hūn, dūdh). An open syllable and a
+        // true cluster (mārg) both shorten.
+        if (
+            !brahmicCodaHasBoundary($coda)
+            && isLongBrahmicVowelToken($tokens[$index]['text'])
+            && brahmicCodaWeight($coda) === 1
+        ) {
+            $keep[$index] = true;
+        }
+
+        return $keep;
+    }
+
+    $last = $vowelIndexes[count($vowelIndexes) - 1];
+    $previous = $vowelIndexes[count($vowelIndexes) - 2];
+    $lastCoda = array_slice($tokens, $last + 1);
+    if (count($vowelIndexes) === 2 && isLongBrahmicVowelToken($tokens[$previous]['text'])) {
+        $contact = array_slice($tokens, $previous + 1, $last - $previous - 1);
+        // Two nuclei and an open second syllable: māre, nīce, cār plus an open syllable.
+        if (brahmicCodaWeight($lastCoda) === 0 && isLightBrahmicSyllableContact($contact)) {
+            $keep[$previous] = true;
+        }
+    }
+
+    // The last syllable, closed by one consonant. ā shortens. ī/ū/ē/ō stay.
+    if (
+        !brahmicCodaHasBoundary($lastCoda)
+        && brahmicCodaWeight($lastCoda) === 1
+        && isLongBrahmicVowelToken($tokens[$last]['text'])
+        && !isCentralLongBrahmicVowel($tokens[$last]['text'])
+    ) {
+        $keep[$last] = true;
+    }
+
+    // A short vowel after one obstruent is a vocalic ending (svarūpe).
+    if (
+        count($vowelIndexes) > 2
+        && !isLongBrahmicVowelToken($tokens[$last]['text'])
+        && brahmicCodaWeight($lastCoda) === 0
+    ) {
+        $contact = array_values(array_slice($tokens, $previous + 1, $last - $previous - 1));
+        if (
+            count($contact) === 1
+            && $contact[0]['type'] === 'consonant'
+            && !isClusterFormingBrahmicResonant($contact[0])
+            && !isNasalBrahmicConsonant($contact[0])
+            && isLongBrahmicVowelToken($tokens[$previous]['text'])
+            && !isCentralLongBrahmicVowel($tokens[$previous]['text'])
+        ) {
+            $keep[$previous] = true;
+        }
+    }
+
+    return $keep;
+}
+
+function withoutBrahmicSyllableBreaks(string $text): string
+{
+    return str_replace(SYLLABLE_BREAK, '', $text);
+}
+
+/**
+ * A schwa boundary keeps the consonant before the break on the stem.
+ *
+ * @param list<array{type:string,text:string}> $tokens
+ *
+ * @return array{start:int,finalIsLong:bool}|null
+ */
+function finalOpenBrahmicSyllableSplit(array $tokens): ?array
+{
+    $vowelIndexes = [];
+    foreach ($tokens as $index => $token) {
+        if ($token['type'] === 'vowel') { $vowelIndexes[] = $index; }
+    }
+
+    if (count($vowelIndexes) < 3) { return null; }
+
+    $last = $vowelIndexes[count($vowelIndexes) - 1];
+    $previous = $vowelIndexes[count($vowelIndexes) - 2];
+    if (brahmicCodaWeight(array_slice($tokens, $last + 1)) !== 0) { return null; }
+
+    $contact = array_values(array_slice($tokens, $previous + 1, $last - $previous - 1));
+    if (!isLightBrahmicSyllableContact($contact)) { return null; }
+
+    $boundaryAt = null;
+    foreach ($contact as $index => $token) {
+        if ($token['type'] === 'boundary') {
+            $boundaryAt = $index;
+            break;
+        }
+    }
+
+    $start = $boundaryAt === null ? $previous + 1 : $previous + 1 + $boundaryAt;
+
+    return [
+        'start' => $start,
+        'finalIsLong' => isLongBrahmicVowelToken($tokens[$last]['text']),
+    ];
+}
+
+/**
+ * @param list<array{type:string,text:string}> $tokens
+ */
+function peelSavesPeripheralBrahmic(array $tokens, int $start): bool
+{
+    $full = smartBrahmicLengthKeepIndexes($tokens);
+    $stem = smartBrahmicLengthKeepIndexes(array_values(array_slice($tokens, 0, $start)));
+    foreach ($stem as $index => $_) {
+        if (isset($full[$index])) { continue; }
+
+        if (isPeripheralLongBrahmicVowel($tokens[$index]['text'])) { return true; }
+    }
+
+    return false;
+}
+
+/**
+ * @param list<array{type:string,text:string}> $tokens
+ */
+function renderSmartBrahmicLengthTokens(array $tokens): string
+{
+    $keep = smartBrahmicLengthKeepIndexes($tokens);
+    $rendered = '';
+    foreach ($tokens as $index => $token) {
+        if ($token['type'] === 'boundary') { continue; }
+
+        $rendered .= ($token['type'] === 'vowel' && !isset($keep[$index]))
+            ? collapseBrahmicVowelToken($token['text'])
+            : $token['text'];
+    }
+
+    return $rendered;
+}
+
+/**
+ * @param list<array{type:string,text:string}> $tokens
+ */
+function renderCollapsedBrahmicEnding(array $tokens): string
+{
+    $rendered = '';
+    foreach ($tokens as $token) {
+        if ($token['type'] === 'boundary') { continue; }
+
+        $rendered .= $token['type'] === 'vowel'
+            ? collapseBrahmicVowelToken($token['text'])
+            : $token['text'];
+    }
+
+    return $rendered;
+}
+
+function smartReadableBrahmicVowelLengthWord(string $word, BrahmicLanguage $language): string
+{
+    if ($language === BrahmicLanguage::SANSKRIT) {
+        return doubleReadableBrahmicVowelLength(withoutBrahmicSyllableBreaks($word));
+    }
+
+    $stem = tokenizeAnnotatedBrahmicWord($word);
+    $ending = '';
+    // Long open endings stack. A short ending is removed only once, and only
+    // when that keeps a peripheral vowel on the stem.
+    while ($stem !== []) {
+        $split = finalOpenBrahmicSyllableSplit($stem);
+        if ($split === null) { break; }
+
+        $shortOk = !$split['finalIsLong'] && peelSavesPeripheralBrahmic($stem, $split['start']);
+        if (!$split['finalIsLong'] && !$shortOk) { break; }
+
+        $ending = renderCollapsedBrahmicEnding(array_values(array_slice($stem, $split['start']))) . $ending;
+        $stem = array_values(array_slice($stem, 0, $split['start']));
+        if ($shortOk) { break; }
+    }
+
+    return doubleReadableBrahmicVowelLength(renderSmartBrahmicLengthTokens($stem) . $ending);
+}
+
+function applyReadableBrahmicVowelLength(
+    string $text,
+    BrahmicVowelLengthPolicy $policy,
+    BrahmicLanguage $language = BrahmicLanguage::AUTO,
+    BrahmicReadableStyle $readableStyle = BrahmicReadableStyle::LEGACY,
+): string {
+    if ($readableStyle !== BrahmicReadableStyle::NATURAL) {
+        return $policy === BrahmicVowelLengthPolicy::DOUBLE
+            ? doubleReadableBrahmicVowelLength($text)
+            : $text;
+    }
+
+    return match ($policy) {
+        BrahmicVowelLengthPolicy::DOUBLE => doubleReadableBrahmicVowelLength(withoutBrahmicSyllableBreaks($text)),
+        BrahmicVowelLengthPolicy::COLLAPSE => collapseReadableBrahmicVowelLength(withoutBrahmicSyllableBreaks($text)),
+        BrahmicVowelLengthPolicy::SMART => mapBrahmicTranscriptionWords(
+            $text,
+            static fn(string $word): string => smartReadableBrahmicVowelLengthWord($word, $language),
+        ),
+    };
 }
 
 function applyBrahmicTerminalAnusvara(string $text, TerminalAnusvaraPolicy $policy): string
@@ -927,7 +1688,7 @@ function applyBrahmicTerminalAnusvara(string $text, TerminalAnusvaraPolicy $poli
         TerminalAnusvaraPolicy::N => 'n',
     };
 
-    return (string) preg_replace('/[ṃṁ](?=$|[^A-Za-z\x{00C0}-\x{024F}\x{1E00}-\x{1EFF}])/u', $replacement, $text);
+    return (string) preg_replace('/[ṃṁ](?=$|[^A-Za-z\x{00C0}-\x{024F}\x{1E00}-\x{1EFF}\x{E101}])/u', $replacement, $text);
 }
 
 function applyReadableBrahmicCandrabindu(string $text, TerminalAnusvaraPolicy $policy): string
@@ -957,6 +1718,47 @@ function applyBrahmicAynPolicy(string $text, AynPolicy $policy): string
     return str_replace('ʿ', $policy === AynPolicy::DROP ? '' : "'", $text);
 }
 
+/**
+ * @param array<string,string> $overrides
+ */
+function applyBrahmicReadableWordOverrides(string $text, array $overrides): string
+{
+    if ($overrides === []) { return $text; }
+
+    return mapBrahmicTranscriptionWords(
+        $text,
+        static fn(string $word): string => array_key_exists($word, $overrides)
+            ? (string) $overrides[$word]
+            : $word,
+    );
+}
+
+function capitalizeBrahmicReadableSentenceStarts(string $text): string
+{
+    $chars = Unicode::split($text);
+    $out = [];
+    $capitalizeNext = true;
+
+    foreach ($chars as $ch) {
+        if ($capitalizeNext && preg_match('/^[a-z]$/', $ch) === 1) {
+            $out[] = strtoupper($ch);
+            $capitalizeNext = false;
+            continue;
+        }
+
+        $out[] = $ch;
+        if (preg_match('/^[A-Za-z]$/', $ch) === 1) {
+            $capitalizeNext = false;
+        }
+
+        if (in_array($ch, ['.', '!', '?', '।', '॥', "\n", "\r"], true)) {
+            $capitalizeNext = true;
+        }
+    }
+
+    return implode('', $out);
+}
+
 function protectBrahmicSemanticOm(string $text): string
 {
     return str_replace(['ॐ', 'ૐ', 'ꣽ'], "\u{E102}", $text);
@@ -982,22 +1784,40 @@ function toPlainEnglishFromBrahmicInternal(
         $config,
         new ScriptToIastOptions(preserveEncodedVedicMarks: $resolved->preserveVedicAccentMarks),
         INHERENT_SCHWA,
+        naturalReadableBrahmicOverrides($config, $language, $resolved->readableStyle),
     );
-    $iast = stripDanglingBrahmicModifiers(naturalizeAnnotatedBrahmicIast($annotated, $language, $resolved->schwaDeletion));
+    $iast = stripDanglingBrahmicModifiers(
+        naturalizeAnnotatedBrahmicIast(
+            $annotated,
+            $language,
+            $resolved->schwaDeletion,
+            $resolved->readableStyle,
+        ),
+    );
+    $naturalBrahmic = $resolved->readableStyle === BrahmicReadableStyle::NATURAL;
+    $naturalModernIndoAryan = $naturalBrahmic && $language !== BrahmicLanguage::SANSKRIT;
+    if ($naturalBrahmic) {
+        $iast = applyBrahmicNaturalMorphology($iast, $language);
+    }
+
     $iast = applyReadableBrahmicCandrabindu($iast, $resolved->terminalAnusvara);
     $iast = applyBrahmicTerminalAnusvara($iast, $resolved->terminalAnusvara);
-    $iast = applyReadableBrahmicVowelLength($iast, $resolved->vowelLength);
+    $iast = applyReadableBrahmicVowelLength(
+        $iast,
+        $resolved->vowelLength,
+        $language,
+        $resolved->readableStyle,
+    );
 
     $profile = $forcedProfile ?? PlainEnglishRomanizationProfile::EXTENDED_INDIC;
     $useW = $resolved->useWForVAfterConsonants ?? false;
-    $suppressGujaratiHunterianAutoW = $profile === PlainEnglishRomanizationProfile::HUNTERIAN
-        && $language === BrahmicLanguage::GUJARATI
-        && !$useW;
-    if ($suppressGujaratiHunterianAutoW) {
+    $suppressHunterianAutoW = $profile === PlainEnglishRomanizationProfile::HUNTERIAN
+        && ($naturalModernIndoAryan || ($language === BrahmicLanguage::GUJARATI && !$useW));
+    if ($suppressHunterianAutoW) {
         $iast = applyHunterianVisargaAbsorption($iast);
     }
 
-    $engineProfile = $suppressGujaratiHunterianAutoW
+    $engineProfile = $suppressHunterianAutoW
         ? PlainEnglishRomanizationProfile::EXTENDED_INDIC
         : $profile;
 
@@ -1012,11 +1832,16 @@ function toPlainEnglishFromBrahmicInternal(
         removeAvagraha: $resolved->removeAvagraha,
         collapseWhitespace: $resolved->collapseWhitespace,
         enableInternalSchwaSyncope: false,
-        useWForVAfterConsonants: $useW,
+        useWForVAfterConsonants: $naturalModernIndoAryan ? false : $useW,
         preserveVedicAccentMarks: $resolved->preserveVedicAccentMarks,
     ));
     $result = applyBrahmicAynPolicy($result, $resolved->ayn);
     $result = restoreBrahmicSemanticOm($result);
+    $result = applyBrahmicReadableWordOverrides($result, $resolved->readableWordOverrides);
+    if ($resolved->capitalizeSentenceStarts) {
+        $result = capitalizeBrahmicReadableSentenceStarts($result);
+    }
+
     $result = restoreSourceLatin($result, $protectedLatin['spans']);
 
     return $result;

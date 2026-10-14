@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.2.0
+
+- Added opt-in Brahmic naturalization for the currently supported Devanagari and Gujarati scripts while keeping all 1.1 defaults unchanged.
+- Added a three-way Brahmic vowel-length policy: `COLLAPSE`, `DOUBLE`, and contextual `SMART` (Dart: `collapse`, `doubled`, `smart`).
+- `SMART` is syllable spelling for modern Gujarati and Hindi. Closed one-syllable words keep length (`aaj`, `chaar`, `naam`, `hoon`, `swaroop`). Open particles and heavy clusters shorten (`ka`, `marg`, `dharan`, `karine`). An open ending keeps stem length (`swaroopama`, `paasethi`, `shwetdweepthi`). A nasal coda keeps a peripheral vowel (`hoonga`). Sanskrit SMART preserves phonemic length (`shvetadveepa`, `svaroopa`).
+- Natural schwa between `p` and unaspirated `t` stays, so Hindi `राष्ट्रपति` is `rashtrapati`. Aspirated `થ` / `थ` still contracts (`શાપથી` → `shaapthi`). Legacy `गांधीनगर` stays `gaandheengar`; natural Hindi is `gandhinagar`.
+- Plain-English defaults to `DOUBLE`. Hunterian defaults to `COLLAPSE` when vowel length is omitted. With `NATURAL` + `SMART` on both, Gujarati Plain and Hunterian match. Gujarati, and modern `NATURAL` Hindi, do not apply blanket consonant-plus-`v` → `w`.
+- Named Hunterian as simplified ASCII Hunterian. A long vowel is one letter (`jan`) and consonant dots are removed. The 1954 macron form (`jān`) is not emitted.
+- Generalized natural schwa/compound handling across the Devanagari/Hindi and Gujarati paths, including `श्वेतद्वीप/શ્વેતદ્વીપ → shwetdweep`, `स्वरूप/સ્વરૂપ → swaroop`, and `सतयुग/સતયુગ → satyug`.
+- Added Gujarati ending patterns (`જેટલાં → jetla`, `બ્રહ્માંડમાં → brahmandma`, `અક્ષરધામમાં → akshardhamma`) and independent `ઋ → ru` in Gujarati-readable mode.
+- Added controlled modern `sv/śv/ṣv/dv → sw/shw/.../dw` readable clusters without blanket `v → w` leakage into words such as `manvantar`, `vasant`, or `ravivar`.
+- Added opt-in sentence-start capitalization and exact readable-word overrides (for example `shwetdweep → Shwetdweep`) without semantic proper-name guessing.
+- Canonical Brahmic → IAST, exact-source recovery, legacy Plain-English/Hunterian defaults, and 1.1 constructor behavior remain unchanged.
+- Added natural-mode scalar/list regression coverage for Gujarati, Devanagari/Hindi, Sanskrit-conservative SMART behavior, and the full Gujarati prose vector.
+
 ## 1.1.0
 
 - Added direct Devanagari/Gujarati → Plain-English and Hunterian APIs, bulk array helpers, and result-envelope variants.

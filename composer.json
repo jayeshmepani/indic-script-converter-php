@@ -30,8 +30,8 @@
     "php": ">=8.3"
   },
   "require-dev": {
-    "laravel/pint": "^1.29",
-    "rector/rector": "^2.4"
+    "laravel/pint": "^1.32",
+    "rector/rector": "^2.7"
   },
   "autoload": {
     "classmap": [

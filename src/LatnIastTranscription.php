@@ -45,6 +45,11 @@ enum NyaPolicy: string
     public const gna = self::GNA;
 }
 
+/**
+ * Readable-Latin profile. HUNTERIAN is simplified ASCII Hunterian: one letter
+ * per long vowel and no consonant dots. That is the map and signboard spelling,
+ * not the 1954 macron standard.
+ */
 enum PlainEnglishRomanizationProfile: string
 {
     case STRICT_IAST = 'strictIast';
